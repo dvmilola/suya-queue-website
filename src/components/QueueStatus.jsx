@@ -206,7 +206,7 @@ function QueueStatus() {
   // If there's a pending submission but no userQueueNumber yet, show loading state
   const pendingSubmission = sessionStorage.getItem('pendingSubmission')
   
-  // Set timeout for loading state (30 seconds)
+  // Set timeout for loading state (30 seconds) - MUST be before conditional returns
   useEffect(() => {
     if (!userQueueNumber && pendingSubmission) {
       const timeout = setTimeout(() => {
@@ -222,6 +222,51 @@ function QueueStatus() {
       setLoadingTimeout(false)
     }
   }, [userQueueNumber, pendingSubmission, loadingStartTime])
+  
+  // Force re-render when userQueueNumber is assigned - MUST be before conditional returns
+  useEffect(() => {
+    if (userQueueNumber) {
+      console.log('🔄 QueueStatus: User queue number assigned, triggering re-render')
+      // Trigger immediate re-render
+      setRenderKey(prev => prev + 1)
+      // Also trigger after a delay to ensure activeQueue is fully updated
+      const timer1 = setTimeout(() => {
+        setRenderKey(prev => prev + 1)
+      }, 300)
+      const timer2 = setTimeout(() => {
+        setRenderKey(prev => prev + 1)
+      }, 800)
+      return () => {
+        clearTimeout(timer1)
+        clearTimeout(timer2)
+      }
+    }
+  }, [userQueueNumber])
+  
+  // Calculate values needed for rendering - MUST be before conditional returns
+  const userInActiveQueue = userQueueNumber ? activeQueue.find(item => item.queueNumber === userQueueNumber) : null
+  const userPosition = userInActiveQueue ? activeQueue.findIndex(item => item.queueNumber === userQueueNumber) + 1 : 0
+  const isUserTurn = userQueueNumber === currentServing
+  const isUserNext = userPosition > 0 && userPosition <= activeQueue.length
+  const currentNum = parseInt(currentServing.replace('SU-', ''))
+  const userNum = userQueueNumber ? parseInt(userQueueNumber.replace('SU-', '')) : 0
+  const peopleAhead = Math.max(0, userNum - currentNum - 1)
+  const userHasBeenServed = userQueueNumber ? (!isUserTurn && userNum <= currentNum) : false
+  
+  // Debug logging - MUST be before conditional returns
+  useEffect(() => {
+    if (userQueueNumber) {
+      console.log('🎮 QueueStatus Debug:')
+      console.log('  userQueueNumber:', userQueueNumber)
+      console.log('  currentServing:', currentServing)
+      console.log('  userNum:', userNum, 'currentNum:', currentNum)
+      console.log('  userInActiveQueue:', userInActiveQueue)
+      console.log('  isUserTurn:', isUserTurn)
+      console.log('  userHasBeenServed:', userHasBeenServed)
+      console.log('  activeQueue length:', activeQueue.length)
+      console.log('  Should show entertainment?', !userHasBeenServed)
+    }
+  }, [userQueueNumber, currentServing, userInActiveQueue, isUserTurn, userHasBeenServed, activeQueue.length, userNum, currentNum])
   
   if (!userQueueNumber && !pendingSubmission) {
     // No queue number and no pending submission - should redirect to register
@@ -311,60 +356,6 @@ function QueueStatus() {
       </div>
     )
   }
-
-  // Check if user is in the active queue (not yet served)
-  // Only calculate if we have a queue number
-  const userInActiveQueue = userQueueNumber ? activeQueue.find(item => item.queueNumber === userQueueNumber) : null
-  const userPosition = userInActiveQueue ? activeQueue.findIndex(item => item.queueNumber === userQueueNumber) + 1 : 0
-  const isUserTurn = userQueueNumber === currentServing
-  const isUserNext = userPosition > 0 && userPosition <= activeQueue.length
-  
-  // Calculate people ahead: customers in active queue before this user
-  const currentNum = parseInt(currentServing.replace('SU-', ''))
-  const userNum = userQueueNumber ? parseInt(userQueueNumber.replace('SU-', '')) : 0
-  const peopleAhead = Math.max(0, userNum - currentNum - 1)
-  
-  // If user has been served (not in active queue and not current), show a message
-  // User is served if: not their turn AND their number is <= current serving
-  // IMPORTANT: Show entertainment section for ALL waiting users (userNum > currentNum)
-  const userHasBeenServed = userQueueNumber ? (!isUserTurn && userNum <= currentNum) : false
-  
-  // Force re-render when userQueueNumber is assigned to ensure entertainment section appears immediately
-  // This fixes the issue where entertainment doesn't show until page reload
-  // Note: renderKey is already declared at the top of the component (line 20)
-  useEffect(() => {
-    if (userQueueNumber) {
-      console.log('🔄 QueueStatus: User queue number assigned, triggering re-render')
-      // Trigger immediate re-render
-      setRenderKey(prev => prev + 1)
-      // Also trigger after a delay to ensure activeQueue is fully updated
-      const timer1 = setTimeout(() => {
-        setRenderKey(prev => prev + 1)
-      }, 300)
-      const timer2 = setTimeout(() => {
-        setRenderKey(prev => prev + 1)
-      }, 800)
-      return () => {
-        clearTimeout(timer1)
-        clearTimeout(timer2)
-      }
-    }
-  }, [userQueueNumber])
-  
-  // Debug logging - only when we have a queue number
-  useEffect(() => {
-    if (userQueueNumber) {
-      console.log('🎮 QueueStatus Debug:')
-      console.log('  userQueueNumber:', userQueueNumber)
-      console.log('  currentServing:', currentServing)
-      console.log('  userNum:', userNum, 'currentNum:', currentNum)
-      console.log('  userInActiveQueue:', userInActiveQueue)
-      console.log('  isUserTurn:', isUserTurn)
-      console.log('  userHasBeenServed:', userHasBeenServed)
-      console.log('  activeQueue length:', activeQueue.length)
-      console.log('  Should show entertainment?', !userHasBeenServed)
-    }
-  }, [userQueueNumber, currentServing, userInActiveQueue, isUserTurn, userHasBeenServed, activeQueue.length, userNum, currentNum])
 
   const containerVariants = {
     hidden: { opacity: 0 },
