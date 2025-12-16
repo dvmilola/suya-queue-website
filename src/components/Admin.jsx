@@ -262,6 +262,9 @@ function Admin() {
                       defaultValue={localStorage.getItem('statusFormEntryId') || 'entry.1883307002'}
                       className="form-input"
                     />
+                    <small style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.85rem', display: 'block', marginTop: '5px', fontWeight: 'bold' }}>
+                      ✅ Your Entry ID: entry.1883307002
+                    </small>
                     <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', display: 'block', marginTop: '5px' }}>
                       Entry ID from Status Form (found in Network tab when submitting)
                     </small>
