@@ -16,6 +16,9 @@ export function QueueProvider({ children }) {
   const [googleFormUrl, setGoogleFormUrl] = useState(() => {
     return localStorage.getItem('googleFormUrl') || ''
   })
+  const [statusSheetGid, setStatusSheetGid] = useState(() => {
+    return localStorage.getItem('statusSheetGid') || '373003429' // Default to user's status sheet GID
+  })
 
   // Compute active queue (filter out served customers)
   // Only show customers whose queue number is greater than currentServing
@@ -66,8 +69,65 @@ export function QueueProvider({ children }) {
     }).filter(row => row.some(cell => cell))
   }
 
+
+  // Fetch current serving from status sheet
+  const fetchCurrentServingFromStatus = useCallback(async () => {
+    if (!googleSheetsUrl) return null
+    
+    // Use statusSheetGid if provided, otherwise default to user's status sheet GID
+    const gidToUse = statusSheetGid || '373003429'
+    
+    try {
+      const sheetId = extractSheetId(googleSheetsUrl)
+      if (!sheetId) return null
+      
+      const statusCsvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gidToUse}`
+      const response = await fetch(statusCsvUrl)
+      
+      if (!response.ok) return null
+      
+      const csvText = await response.text()
+      if (csvText.includes('<!DOCTYPE html>') || csvText.includes('<html')) return null
+      
+      const rows = parseCSV(csvText)
+      if (rows.length === 0) return null
+      
+      const firstRow = rows[0]
+      let servingValue = null
+      
+      // Check if first row has "Current Serving" header
+      if (firstRow[0] && firstRow[0].toLowerCase().includes('current serving')) {
+        servingValue = firstRow[1] ? firstRow[1].trim().toUpperCase() : null
+      } else if (firstRow[0] && firstRow[0].match(/^SU-\d{3}$/i)) {
+        // Direct value in first cell
+        servingValue = firstRow[0].trim().toUpperCase()
+      } else if (firstRow[1] && firstRow[1].match(/^SU-\d{3}$/i)) {
+        // Value in second cell
+        servingValue = firstRow[1].trim().toUpperCase()
+      }
+      
+      if (servingValue && servingValue.match(/^SU-\d{3}$/i)) {
+        return servingValue
+      }
+    } catch (error) {
+      console.warn('Error fetching current serving from status sheet:', error)
+    }
+    
+    return null
+  }, [googleSheetsUrl, statusSheetGid])
+
   // Load queue data from Google Sheets or localStorage
   const fetchQueueData = useCallback(async () => {
+    // First, try to fetch current serving from status sheet
+    if (googleSheetsUrl) {
+      const servingFromStatus = await fetchCurrentServingFromStatus()
+      if (servingFromStatus && servingFromStatus !== currentServing) {
+        setCurrentServing(servingFromStatus)
+        localStorage.setItem('currentServing', servingFromStatus)
+        console.log(`✅ Updated currentServing from Status sheet: ${servingFromStatus}`)
+      }
+    }
+    
     // Try Google Sheets first
     if (googleSheetsUrl) {
       try {
@@ -103,59 +163,63 @@ export function QueueProvider({ children }) {
           
           const rows = parseCSV(csvText)
           
-          if (rows.length > 1) {
-            // Skip header row - Google Forms typically has: Timestamp, Name, Pepper Level, Portion Type
-            // But we'll be flexible with column order
-            const headerRow = rows[0]
-            
-            // Find column indices (case-insensitive search)
-            const findColumnIndex = (searchTerms) => {
-              for (let i = 0; i < headerRow.length; i++) {
-                const header = headerRow[i].toLowerCase()
-                if (searchTerms.some(term => header.includes(term))) {
-                  return i
+          if (rows.length > 0) {
+            // Process queue data (no need to check for status row since we fetch from separate status sheet)
+            if (rows.length > 1) {
+              // First row is header
+              const headerRow = rows[0]
+              
+              // Find column indices (case-insensitive search)
+              const findColumnIndex = (searchTerms) => {
+                for (let i = 0; i < headerRow.length; i++) {
+                  const header = headerRow[i].toLowerCase()
+                  if (searchTerms.some(term => header.includes(term))) {
+                    return i
+                  }
                 }
-              }
-              return null
-            }
-            
-            const timestampIndex = findColumnIndex(['timestamp', 'time', 'date']) ?? 0
-            const nameIndex = findColumnIndex(['name', 'nickname']) ?? 1
-            const pepperIndex = findColumnIndex(['pepper', 'spice']) ?? 2
-            const portionIndex = findColumnIndex(['portion', 'size', 'type']) ?? 3
-            
-            const data = rows.slice(1).map((row, index) => {
-              // Normalize pepper values
-              let pepper = (row[pepperIndex] || '').toLowerCase()
-              if (pepper.includes('no') || pepper === 'no pepper') {
-                pepper = 'no-pepper'
-              } else if (pepper.includes('extra')) {
-                pepper = 'extra'
-              } else {
-                pepper = 'normal'
+                return null
               }
               
-              // Normalize portion values
-              let portion = (row[portionIndex] || 'regular').toLowerCase()
-              if (portion.includes('kid') || portion.includes('child')) {
-                portion = 'kids'
-              } else {
-                portion = 'regular'
-              }
+              const timestampIndex = findColumnIndex(['timestamp', 'time', 'date']) ?? 0
+              const nameIndex = findColumnIndex(['name', 'nickname']) ?? 1
+              const pepperIndex = findColumnIndex(['pepper', 'spice']) ?? 2
+              const portionIndex = findColumnIndex(['portion', 'size', 'type']) ?? 3
               
-              return {
-                number: index + 1,
-                queueNumber: `SU-${String(index + 1).padStart(3, '0')}`,
-                timestamp: row[timestampIndex] || '',
-                name: row[nameIndex] || 'Guest',
-                pepper: pepper,
-                portion: portion
-              }
-            })
-            
+              // Process data rows (skip header row)
+              const dataRows = rows.slice(1)
+              const data = dataRows.map((row, index) => {
+                // Normalize pepper values
+                let pepper = (row[pepperIndex] || '').toLowerCase()
+                if (pepper.includes('no') || pepper === 'no pepper') {
+                  pepper = 'no-pepper'
+                } else if (pepper.includes('extra')) {
+                  pepper = 'extra'
+                } else {
+                  pepper = 'normal'
+                }
+                
+                // Normalize portion values
+                let portion = (row[portionIndex] || 'regular').toLowerCase()
+                if (portion.includes('kid') || portion.includes('child')) {
+                  portion = 'kids'
+                } else {
+                  portion = 'regular'
+                }
+                
+                return {
+                  number: index + 1,
+                  queueNumber: `SU-${String(index + 1).padStart(3, '0')}`,
+                  timestamp: row[timestampIndex] || '',
+                  name: row[nameIndex] || 'Guest',
+                  pepper: pepper,
+                  portion: portion
+                }
+              })
+              
             setQueueData(data)
             console.log(`Loaded ${data.length} queue items from Google Sheets`)
             return
+            }
           }
         }
       } catch (error) {
@@ -180,7 +244,7 @@ export function QueueProvider({ children }) {
     } catch (error) {
       console.error('Error loading from localStorage:', error)
     }
-  }, [googleSheetsUrl])
+  }, [googleSheetsUrl, currentServing, fetchCurrentServingFromStatus])
 
   // Poll Google Sheets every 3 seconds for real-time updates
   useEffect(() => {
@@ -224,9 +288,15 @@ export function QueueProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
-  const updateCurrentServing = (number) => {
+  const updateCurrentServing = async (number) => {
     setCurrentServing(number)
     localStorage.setItem('currentServing', number)
+    
+    // Also try to update Google Sheets if we have a status form URL
+    // Note: This requires a separate Google Form for status updates
+    // For now, we'll just update localStorage and the sheet will be updated manually
+    // or via a separate mechanism
+    console.log(`Updated currentServing to ${number}. To sync across devices, update Google Sheets manually or use status form.`)
   }
 
   const saveUserQueueNumber = (number) => {
@@ -242,6 +312,15 @@ export function QueueProvider({ children }) {
   const saveGoogleFormUrl = (url) => {
     setGoogleFormUrl(url)
     localStorage.setItem('googleFormUrl', url)
+  }
+
+  const saveStatusSheetGid = (gid) => {
+    setStatusSheetGid(gid)
+    if (gid) {
+      localStorage.setItem('statusSheetGid', gid)
+    } else {
+      localStorage.removeItem('statusSheetGid')
+    }
   }
 
   const resetQueue = () => {
@@ -266,6 +345,8 @@ export function QueueProvider({ children }) {
         saveUserQueueNumber,
         saveGoogleSheetsUrl,
         saveGoogleFormUrl,
+        saveStatusSheetGid,
+        statusSheetGid,
         resetQueue,
         fetchQueueData
       }}

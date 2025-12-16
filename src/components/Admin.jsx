@@ -29,8 +29,10 @@ function Admin() {
     resetQueue,
     googleSheetsUrl,
     googleFormUrl,
+    statusSheetGid,
     saveGoogleSheetsUrl,
     saveGoogleFormUrl,
+    saveStatusSheetGid,
     fetchQueueData
   } = useQueue()
 
@@ -80,9 +82,11 @@ function Admin() {
     const formData = new FormData(e.target)
     const sheetsUrl = formData.get('sheetsUrl')
     const formUrl = formData.get('formUrl')
+    const statusGid = formData.get('statusGid')
     
     if (sheetsUrl) saveGoogleSheetsUrl(sheetsUrl)
     if (formUrl) saveGoogleFormUrl(formUrl)
+    if (statusGid) saveStatusSheetGid(statusGid.trim() || null)
     
     setShowSetup(false)
     alert('Configuration saved!')
@@ -203,6 +207,23 @@ function Admin() {
                       defaultValue={googleFormUrl}
                       className="form-input"
                     />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="statusGid">
+                      <FaCog className="label-icon" />
+                      Status Sheet GID (for cross-device sync):
+                    </label>
+                    <input
+                      type="text"
+                      id="statusGid"
+                      name="statusGid"
+                      placeholder="373003429"
+                      defaultValue={statusSheetGid || '373003429'}
+                      className="form-input"
+                    />
+                    <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', display: 'block', marginTop: '5px' }}>
+                      GID from your Status sheet tab URL (e.g., #gid=373003429)
+                    </small>
                   </div>
                   <motion.button
                     type="submit"
