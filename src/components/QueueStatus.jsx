@@ -110,11 +110,29 @@ function QueueStatus() {
   }
 
   useEffect(() => {
+    // Check if there's a pending submission - wait for it to be matched
+    const pendingSubmission = sessionStorage.getItem('pendingSubmission')
+    
     if (!userQueueNumber) {
-      navigate('/register')
-      return
+      // If there's a pending submission, don't redirect immediately
+      // Give time for the form submission to appear in Google Sheets and be matched
+      if (pendingSubmission) {
+        console.log('⏳ Pending submission found, waiting for queue number assignment...')
+        // Fetch queue data to trigger matching
+        fetchQueueData()
+        // Set up polling to keep trying to match
+        const interval = setInterval(() => {
+          fetchQueueData()
+        }, 3000)
+        return () => clearInterval(interval)
+      } else {
+        // No pending submission and no queue number - redirect to registration
+        navigate('/register')
+        return
+      }
     }
 
+    // User has queue number - proceed normally
     // Initial fetch
     fetchQueueData()
     
