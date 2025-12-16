@@ -8,7 +8,8 @@ export function QueueProvider({ children }) {
   })
   const [queueData, setQueueData] = useState([])
   const [userQueueNumber, setUserQueueNumber] = useState(() => {
-    return localStorage.getItem('userQueueNumber') || null
+    // Try to get from sessionStorage first (from current session)
+    return sessionStorage.getItem('userQueueNumber') || null
   })
   const [googleSheetsUrl, setGoogleSheetsUrl] = useState(() => {
     return localStorage.getItem('googleSheetsUrl') || ''
@@ -222,8 +223,53 @@ export function QueueProvider({ children }) {
                 }
               })
               
-            setQueueData(data)
+              setQueueData(data)
             console.log(`✅ Loaded ${data.length} queue items from Google Sheets`)
+            
+            // Try to match user to their submission in the queue data
+            // This happens after form submission when user navigates to queue
+            const pendingSubmission = sessionStorage.getItem('pendingSubmission')
+            if (pendingSubmission && !userQueueNumber) {
+              try {
+                const submission = JSON.parse(pendingSubmission)
+                // Find the most recent entry that matches the submission
+                // Match by name (if provided) and timestamp being recent (within last 2 minutes)
+                const submissionTime = new Date(submission.timestamp).getTime()
+                const twoMinutesAgo = Date.now() - 2 * 60 * 1000
+                
+                // Find matching entry - most recent one that matches
+                let matchedEntry = null
+                for (let i = data.length - 1; i >= 0; i--) {
+                  const entry = data[i]
+                  const entryTime = entry.timestamp ? new Date(entry.timestamp).getTime() : 0
+                  
+                  // Check if this entry matches (by name if provided, or just by being recent)
+                  const nameMatches = !submission.name || submission.name === 'Guest' || 
+                    entry.name.toLowerCase().includes(submission.name.toLowerCase()) ||
+                    submission.name.toLowerCase().includes(entry.name.toLowerCase())
+                  
+                  const timeMatches = entryTime > twoMinutesAgo && entryTime <= submissionTime + 60000 // Within 1 minute of submission
+                  
+                  if (nameMatches && timeMatches) {
+                    matchedEntry = entry
+                    break
+                  }
+                }
+                
+                if (matchedEntry) {
+                  setUserQueueNumber(matchedEntry.queueNumber)
+                  sessionStorage.setItem('userQueueNumber', matchedEntry.queueNumber)
+                  sessionStorage.removeItem('pendingSubmission')
+                  console.log(`✅ Matched user to queue number: ${matchedEntry.queueNumber}`)
+                } else {
+                  console.log('⏳ Waiting for submission to appear in Google Sheets...')
+                  // Keep pendingSubmission for next poll
+                }
+              } catch (error) {
+                console.warn('Error matching user submission:', error)
+              }
+            }
+            
             return
             }
           }
@@ -246,11 +292,12 @@ export function QueueProvider({ children }) {
   useEffect(() => {
     if (googleSheetsUrl) {
       fetchQueueData()
-      const interval = setInterval(fetchQueueData, 3000) // Reduced from 8s to 3s for faster updates
+      const interval = setInterval(fetchQueueData, 3000) // Poll every 3 seconds for real-time updates
       return () => clearInterval(interval)
     } else {
-      // If no Google Sheets URL, load from localStorage once
-      fetchQueueData()
+      // If no Google Sheets URL, clear queue data
+      setQueueData([])
+      console.warn('⚠️ No Google Sheets URL configured. Queue data will be empty until configured.')
     }
   }, [googleSheetsUrl, fetchQueueData])
 
@@ -336,7 +383,8 @@ export function QueueProvider({ children }) {
 
   const saveUserQueueNumber = (number) => {
     setUserQueueNumber(number)
-    localStorage.setItem('userQueueNumber', number)
+    // Store in sessionStorage (not localStorage) - only for current session
+    sessionStorage.setItem('userQueueNumber', number)
   }
 
   const saveGoogleSheetsUrl = (url) => {
@@ -371,9 +419,9 @@ export function QueueProvider({ children }) {
     setCurrentServing('SU-000')
     setQueueData([])
     setUserQueueNumber(null)
-    localStorage.removeItem('userQueueNumber')
+    sessionStorage.removeItem('userQueueNumber')
+    sessionStorage.removeItem('pendingSubmission')
     localStorage.removeItem('currentServing')
-    localStorage.removeItem('localQueue')
   }
 
   return (

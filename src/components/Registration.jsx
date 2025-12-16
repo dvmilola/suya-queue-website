@@ -49,137 +49,117 @@ function Registration() {
 
     console.log('Form submission started', { googleFormUrl, formData })
 
+    // Require Google Form URL - no localStorage fallback
+    if (!googleFormUrl) {
+      alert('⚠️ Google Form URL is not configured. Please configure it in the Admin settings.')
+      setSubmitting(false)
+      submissionInProgress.current = false
+      return
+    }
+
     try {
-      const queueNumber = generateQueueNumber()
+      console.log('Google Form URL found, attempting submission...')
       
-      if (googleFormUrl) {
-        console.log('Google Form URL found, attempting submission...')
-        try {
-          // Extract form ID - handles multiple URL formats
-          let formId = null
-          
-          // Check if it's a short URL (forms.gle/XXXXX) and try to resolve it
-          if (googleFormUrl.includes('forms.gle/')) {
-            console.warn('⚠️ Short URL detected. Attempting to resolve to full URL...')
-            console.warn('For better reliability, use the full URL: https://docs.google.com/forms/d/e/FORM_ID/viewform')
-            
-            // Try to resolve short URL by making a HEAD request
-            try {
-              const response = await fetch(googleFormUrl, { 
-                method: 'HEAD', 
-                redirect: 'follow',
-                mode: 'no-cors' // This won't work for getting the redirect URL
-              })
-              
-              // Since we can't read the redirect with no-cors, we need to use the full URL
-              // The user should use: https://docs.google.com/forms/d/e/1FAIpQLSctFgoQkg8aTeron5gon5uC1thSqk8xmx1caadCmuMzk0frmg/viewform
-              throw new Error('Short URL (forms.gle) detected. Please use the full Google Form URL instead. Your full URL should be: https://docs.google.com/forms/d/e/1FAIpQLSctFgoQkg8aTeron5gon5uC1thSqk8xmx1caadCmuMzk0frmg/viewform')
-            } catch (resolveError) {
-              throw new Error('Short URL (forms.gle) detected. Please use the full Google Form URL instead. Your full URL should be: https://docs.google.com/forms/d/e/1FAIpQLSctFgoQkg8aTeron5gon5uC1thSqk8xmx1caadCmuMzk0frmg/viewform')
-            }
-          }
-          
-          // Try /e/ format first (newer format like: /forms/d/e/FORM_ID)
-          const formIdMatchE = googleFormUrl.match(/\/forms\/d\/e\/([a-zA-Z0-9-_]+)/)
-          if (formIdMatchE) {
-            formId = formIdMatchE[1]
-          } else {
-            // Try /d/ format (older format)
-            const formIdMatchD = googleFormUrl.match(/\/forms\/d\/([a-zA-Z0-9-_]+)/)
-            if (formIdMatchD) {
-              formId = formIdMatchD[1]
-            }
-          }
-          
-          if (formId) {
-            const formAction = `https://docs.google.com/forms/d/e/${formId}/formResponse`
-            console.log('Form ID extracted:', formId)
-            console.log('Form action URL:', formAction)
-            
-            // Entry IDs from your Google Form (extracted from Network tab)
-            const entryIds = {
-              name: 'entry.310430013',    // Name or Nickname field
-              pepper: 'entry.1825114017',  // Pepper Level field
-              portion: 'entry.682541457'  // Portion Type field
-            }
-            console.log('Entry IDs:', entryIds)
-
-            // Map form values to Google Form format
-            const pepperMap = {
-              'no-pepper': 'No Pepper',
-              'normal': 'Normal',
-              'extra': 'Extra'
-            }
-            
-            const portionMap = {
-              'regular': 'Regular',
-              'kids': 'Kids'
-            }
-
-            // Prepare form data for submission using URLSearchParams
-            const formDataToSubmit = new URLSearchParams()
-            formDataToSubmit.append(entryIds.name, formData.name || '')
-            formDataToSubmit.append(entryIds.pepper, pepperMap[formData.pepper] || formData.pepper || 'Normal')
-            formDataToSubmit.append(entryIds.portion, portionMap[formData.portion] || formData.portion || 'Regular')
-            
-            console.log('About to submit form to:', formAction)
-            console.log('Form data to submit:', {
-              [entryIds.name]: formData.name || '',
-              [entryIds.pepper]: pepperMap[formData.pepper] || formData.pepper || 'Normal',
-              [entryIds.portion]: portionMap[formData.portion] || formData.portion || 'Regular'
-            })
-            
-            // Use ONLY fetch API - single submission method to avoid duplicates
-            // With no-cors mode, we can't read the response, but the submission will work
-            fetch(formAction, {
-              method: 'POST',
-              mode: 'no-cors', // Required for Google Forms (they don't allow CORS)
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: formDataToSubmit
-            }).then(() => {
-              console.log('✅ Form submitted successfully via fetch (single submission)')
-              console.log('Check Network tab - you should see ONE request to formResponse')
-            }).catch((error) => {
-              console.error('❌ Fetch submission failed:', error)
-              // Don't retry - just log the error
-            })
-          } else {
-            console.error('Could not extract form ID from URL:', googleFormUrl)
-          }
-        } catch (formError) {
-          console.error('Google Form submission failed:', formError)
-          console.error('Error details:', {
-            message: formError.message,
-            stack: formError.stack,
-            formUrl: googleFormUrl
-          })
-          console.warn('Form will still be saved to localStorage. Make sure entry IDs are configured correctly. See GOOGLE_SETUP_WALKTHROUGH.md')
-        }
-      } else {
-        console.warn('No Google Form URL configured. Form will only be saved to localStorage.')
-        console.warn('To enable Google Forms submission, configure the URL in /admin')
+      // Extract form ID - handles multiple URL formats
+      let formId = null
+      
+      // Check if it's a short URL (forms.gle/XXXXX)
+      if (googleFormUrl.includes('forms.gle/')) {
+        alert('⚠️ Short URL detected. Please use the full Google Form URL instead.')
+        setSubmitting(false)
+        submissionInProgress.current = false
+        return
       }
       
-      saveUserQueueNumber(queueNumber)
+      // Try /e/ format first (newer format like: /forms/d/e/FORM_ID)
+      const formIdMatchE = googleFormUrl.match(/\/forms\/d\/e\/([a-zA-Z0-9-_]+)/)
+      if (formIdMatchE) {
+        formId = formIdMatchE[1]
+      } else {
+        // Try /d/ format (older format)
+        const formIdMatchD = googleFormUrl.match(/\/forms\/d\/([a-zA-Z0-9-_]+)/)
+        if (formIdMatchD) {
+          formId = formIdMatchD[1]
+        }
+      }
       
-      const queueItems = JSON.parse(localStorage.getItem('localQueue') || '[]')
-      queueItems.push({
-        queueNumber,
+      if (!formId) {
+        alert('❌ Could not extract form ID from URL. Please check your Google Form URL.')
+        setSubmitting(false)
+        submissionInProgress.current = false
+        return
+      }
+
+      const formAction = `https://docs.google.com/forms/d/e/${formId}/formResponse`
+      console.log('Form ID extracted:', formId)
+      console.log('Form action URL:', formAction)
+      
+      // Entry IDs from your Google Form (extracted from Network tab)
+      const entryIds = {
+        name: 'entry.310430013',    // Name or Nickname field
+        pepper: 'entry.1825114017',  // Pepper Level field
+        portion: 'entry.682541457'  // Portion Type field
+      }
+      console.log('Entry IDs:', entryIds)
+
+      // Map form values to Google Form format
+      const pepperMap = {
+        'no-pepper': 'No Pepper',
+        'normal': 'Normal',
+        'extra': 'Extra'
+      }
+      
+      const portionMap = {
+        'regular': 'Regular',
+        'kids': 'Kids'
+      }
+
+      // Prepare form data for submission using URLSearchParams
+      const formDataToSubmit = new URLSearchParams()
+      formDataToSubmit.append(entryIds.name, formData.name || '')
+      formDataToSubmit.append(entryIds.pepper, pepperMap[formData.pepper] || formData.pepper || 'Normal')
+      formDataToSubmit.append(entryIds.portion, portionMap[formData.portion] || formData.portion || 'Regular')
+      
+      console.log('About to submit form to:', formAction)
+      console.log('Form data to submit:', {
+        [entryIds.name]: formData.name || '',
+        [entryIds.pepper]: pepperMap[formData.pepper] || formData.pepper || 'Normal',
+        [entryIds.portion]: portionMap[formData.portion] || formData.portion || 'Regular'
+      })
+      
+      // Submit to Google Form - REQUIRED, no localStorage fallback
+      await fetch(formAction, {
+        method: 'POST',
+        mode: 'no-cors', // Required for Google Forms (they don't allow CORS)
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formDataToSubmit
+      })
+      
+      console.log('✅ Form submitted successfully to Google Form')
+      console.log('✅ Your submission will appear in Google Sheets shortly')
+      
+      // Store submission details in sessionStorage temporarily to match user to their entry
+      // This will be used to find their queue number from Google Sheets
+      sessionStorage.setItem('pendingSubmission', JSON.stringify({
         name: formData.name || 'Guest',
         pepper: formData.pepper,
         portion: formData.portion || 'regular',
         timestamp: new Date().toISOString()
-      })
-      localStorage.setItem('localQueue', JSON.stringify(queueItems))
+      }))
       
+      console.log('✅ Submission details stored. Queue number will be assigned from Google Sheets.')
+      
+      // Navigate to queue - the queue number will be determined from Google Sheets
       navigate('/queue')
+      
     } catch (error) {
-      console.error('Error submitting form:', error)
-      const queueNumber = generateQueueNumber()
-      saveUserQueueNumber(queueNumber)
-      navigate('/queue')
+      console.error('❌ Google Form submission failed:', error)
+      alert('❌ Failed to submit form. Please check your internet connection and try again. Make sure Google Form URL is configured correctly in Admin settings.')
+      setSubmitting(false)
+      submissionInProgress.current = false
+      return
     } finally {
       setSubmitting(false)
       // Reset submission flag after navigation completes
@@ -187,12 +167,6 @@ function Registration() {
         submissionInProgress.current = false
       }, 3000)
     }
-  }
-
-  const generateQueueNumber = () => {
-    const existingItems = JSON.parse(localStorage.getItem('localQueue') || '[]')
-    const nextNumber = existingItems.length + 1
-    return `SU-${String(nextNumber).padStart(3, '0')}`
   }
 
   const handleChange = (e) => {
