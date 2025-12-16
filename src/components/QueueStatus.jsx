@@ -463,6 +463,7 @@ function QueueStatus() {
             </motion.div>
           </AnimatePresence>
 
+          {/* Always show entertainment section when waiting, feedback when served */}
           {userHasBeenServed ? (
             <motion.div
               className="feedback-prompt-section"
@@ -472,6 +473,9 @@ function QueueStatus() {
                 <FaStar className="section-icon" />
                 Share Your Experience
               </h3>
+              <p style={{ marginBottom: '15px', color: 'rgba(255,255,255,0.8)' }}>
+                We'd love to hear your feedback on the Suya experience!
+              </p>
               <motion.button
                 className="btn-primary"
                 onClick={() => navigate('/feedback')}
@@ -492,6 +496,9 @@ function QueueStatus() {
                 <FaGamepad className="section-icon" />
                 While You Wait...
               </h3>
+              <p style={{ marginBottom: '15px', color: 'rgba(255,255,255,0.8)' }}>
+                Pass the time with some fun activities!
+              </p>
               <motion.button
                 className="btn-secondary"
                 onClick={() => navigate('/trivia')}
