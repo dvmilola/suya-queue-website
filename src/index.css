@@ -1,0 +1,387 @@
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Christmas Color Palette */
+  --christmas-red: #DC143C;
+  --christmas-dark-red: #B22222;
+  --christmas-green: #228B22;
+  --christmas-dark-green: #006400;
+  --christmas-gold: #FFD700;
+  --christmas-light-gold: #FFF8DC;
+  --christmas-white: #FFFFFF;
+  --christmas-snow: #F8F8FF;
+  --christmas-silver: #C0C0C0;
+  
+  /* Accent Colors */
+  --primary-color: var(--christmas-red);
+  --primary-dark: var(--christmas-dark-red);
+  --secondary-color: var(--christmas-green);
+  --accent-color: var(--christmas-gold);
+  
+  /* Text Colors */
+  --text-dark: #1a1a1a;
+  --text-light: #666;
+  --text-white: #FFFFFF;
+  
+  /* Backgrounds */
+  --bg-light: var(--christmas-snow);
+  --bg-white: var(--christmas-white);
+  --bg-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+  --bg-christmas: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 20px rgba(255, 215, 0, 0.5);
+  --shadow-red-glow: 0 0 30px rgba(220, 20, 60, 0.4);
+  
+  /* Borders */
+  --border-color: rgba(255, 255, 255, 0.2);
+  --border-gold: 2px solid var(--christmas-gold);
+  
+  /* Success/Error */
+  --success-color: #4caf50;
+  --error-color: #f44336;
+}
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-christmas);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text-dark);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* Animated Background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(220, 20, 60, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(34, 139, 34, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+  animation: none;
+}
+
+@keyframes backgroundShift {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+#root {
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: block;
+}
+
+/* Snowflake Animation */
+@keyframes snowfall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.snowflake {
+  position: fixed;
+  top: -10px;
+  color: white;
+  font-size: 1em;
+  font-family: Arial;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+  animation: snowfall linear infinite;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Common Button Styles */
+.btn-primary {
+  background: linear-gradient(135deg, var(--christmas-red), var(--christmas-dark-red));
+  color: white;
+  border: none;
+  padding: 20px 40px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 50px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-red-glow);
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-primary:hover:not(:disabled)::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 40px rgba(220, 20, 60, 0.6);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, var(--christmas-green), var(--christmas-dark-green));
+  color: white;
+  border: 2px solid var(--christmas-gold);
+  padding: 18px 36px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 10px;
+  font-family: inherit;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-secondary:hover::before {
+  left: 100%;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, var(--christmas-dark-green), var(--christmas-green));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(34, 139, 34, 0.4);
+}
+
+.btn-link {
+  background: transparent;
+  color: var(--christmas-gold);
+  border: none;
+  padding: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.btn-link:hover {
+  color: var(--christmas-white);
+  text-shadow: 0 0 10px var(--christmas-gold);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #8B0000, #DC143C);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  width: 100%;
+  font-family: inherit;
+  box-shadow: var(--shadow);
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 0, 0, 0.4);
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 12px 24px;
+  font-size: 14px;
+  border-radius: 25px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: var(--christmas-gold);
+  transform: translateX(-5px);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+/* Container */
+.container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+
+/* Glass Morphism Effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Sparkle Animation */
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+.sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--christmas-gold);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--christmas-gold);
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Icon Styles */
+.icon-inline {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 6px;
+  font-size: 1em;
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pepper-icon-small {
+  display: inline-block;
+  margin: 0 2px;
+  color: var(--christmas-red);
+  font-size: 0.9em;
+}
+
+.portion-icon-small {
+  display: inline-block;
+  margin: 0 4px;
+  color: var(--text-light);
+  font-size: 0.9em;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .container {
+    padding: 15px;
+  }
+  
+  .btn-primary {
+    padding: 18px 32px;
+    font-size: 16px;
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--christmas-red), var(--christmas-gold));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--christmas-gold), var(--christmas-red));
+}

@@ -1,0 +1,320 @@
+.queue-screen {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+.queue-content {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 40px 30px;
+  border-radius: 30px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 0 40px rgba(220, 20, 60, 0.2),
+    inset 0 0 30px rgba(255, 215, 0, 0.1);
+  text-align: center;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.queue-header {
+  margin-bottom: 30px;
+}
+
+.header-image {
+  max-width: 140px;
+  height: auto;
+  max-height: 100px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  object-fit: contain;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+}
+
+.queue-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.title-decoration {
+  font-size: 24px;
+  color: var(--christmas-gold);
+  animation: rotate 3s linear infinite;
+}
+
+.queue-card {
+  background: linear-gradient(135deg, var(--christmas-red), var(--christmas-dark-red));
+  padding: 40px 30px;
+  border-radius: 20px;
+  margin-bottom: 25px;
+  box-shadow: 
+    0 10px 40px rgba(220, 20, 60, 0.4),
+    0 0 30px rgba(220, 20, 60, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.queue-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
+  animation: shine 3s infinite;
+}
+
+.queue-card.active-turn {
+  background: linear-gradient(135deg, var(--christmas-gold), #FFA500);
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 
+      0 10px 40px rgba(255, 215, 0, 0.6),
+      0 0 30px rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    box-shadow: 
+      0 15px 50px rgba(255, 215, 0, 0.8),
+      0 0 40px rgba(255, 215, 0, 0.6);
+  }
+}
+
+.queue-number-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.queue-label {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+
+.queue-number {
+  color: white;
+  font-size: 64px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.5),
+    0 4px 10px rgba(0, 0, 0, 0.3);
+  font-family: 'Poppins', sans-serif;
+}
+
+.turn-indicator {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  font-size: 18px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.current-serving {
+  background: linear-gradient(135deg, rgba(34, 139, 34, 0.1), rgba(0, 100, 0, 0.1));
+  padding: 25px;
+  border-radius: 15px;
+  margin-bottom: 25px;
+  border: 2px solid rgba(34, 139, 34, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.serving-label {
+  display: block;
+  color: var(--christmas-green);
+  font-size: 14px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.serving-number {
+  display: block;
+  color: var(--christmas-green);
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-shadow: 0 2px 10px rgba(34, 139, 34, 0.3);
+}
+
+.people-ahead {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.status-message {
+  margin: 25px 0;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(46, 125, 50, 0.15));
+  border-radius: 15px;
+  border-left: 4px solid var(--success-color);
+  backdrop-filter: blur(10px);
+}
+
+.status-message.active {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
+  border-left-color: var(--christmas-gold);
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-left-width: 4px;
+    box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+  }
+  50% {
+    border-left-width: 6px;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  }
+}
+
+.status-message p {
+  color: var(--text-dark);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.entertainment-section {
+  margin-top: 35px;
+  padding-top: 30px;
+  border-top: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.entertainment-section h3 {
+  font-size: 20px;
+  margin-bottom: 20px;
+  color: var(--text-dark);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.section-icon {
+  font-size: 24px;
+  color: var(--text-dark);
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+
+@media (max-width: 768px) {
+  .queue-content {
+    padding: 30px 20px;
+  }
+  
+  .queue-number {
+    font-size: 56px;
+  }
+  
+  .serving-number {
+    font-size: 38px;
+  }
+  
+  .queue-title {
+    font-size: 22px;
+  }
+
+  .entertainment-section {
+    margin-top: 25px;
+    padding-top: 20px;
+  }
+
+  .entertainment-section h3 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .queue-content {
+    padding: 25px 15px;
+  }
+  
+  .queue-number {
+    font-size: 48px;
+  }
+  
+  .serving-number {
+    font-size: 32px;
+  }
+  
+  .queue-title {
+    font-size: 20px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .queue-card {
+    padding: 30px 20px;
+  }
+
+  .current-serving {
+    padding: 20px 15px;
+  }
+
+  .status-message {
+    padding: 15px;
+    margin: 20px 0;
+  }
+
+  .status-message p {
+    font-size: 15px;
+  }
+
+  .entertainment-section {
+    margin-top: 20px;
+    padding-top: 15px;
+  }
+
+  .entertainment-section h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+  }
+}

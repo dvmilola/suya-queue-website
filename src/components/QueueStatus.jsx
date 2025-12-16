@@ -1,0 +1,460 @@
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useQueue } from '../context/QueueContext'
+import { FaBell, FaGamepad, FaCheckCircle, FaStar } from 'react-icons/fa'
+import { HiSparkles } from 'react-icons/hi'
+import './QueueStatus.css'
+
+function QueueStatus() {
+  const navigate = useNavigate()
+  const { userQueueNumber, currentServing, activeQueue, fetchQueueData } = useQueue()
+  const [hasPlayedSound, setHasPlayedSound] = useState(false)
+  const previousServingRef = useRef(currentServing)
+
+  // Generate notification sound using Web Audio API
+  // Note: Audio file support removed since file doesn't exist - using Web Audio API directly
+  const playNotificationSound = async () => {
+    // Use Web Audio API directly (more reliable, no file needed)
+    playWebAudioSound()
+  }
+
+  // Web Audio API fallback
+  const playWebAudioSound = async () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext
+      const audioContext = new AudioContext()
+      
+      // Resume audio context if suspended (required by browser autoplay policy)
+      if (audioContext.state === 'suspended') {
+        console.log('Resuming audio context...')
+        await audioContext.resume()
+        console.log('Audio context resumed, state:', audioContext.state)
+      }
+      
+      // Create a more noticeable notification sound (bell-like chime)
+      const oscillator1 = audioContext.createOscillator()
+      const oscillator2 = audioContext.createOscillator()
+      const oscillator3 = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator1.connect(gainNode)
+      oscillator2.connect(gainNode)
+      oscillator3.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      // Create a pleasant three-tone chime (like a bell)
+      const now = audioContext.currentTime
+      
+      // First tone (low)
+      oscillator1.frequency.setValueAtTime(523.25, now) // C5
+      oscillator1.type = 'sine'
+      
+      // Second tone (middle)
+      oscillator2.frequency.setValueAtTime(659.25, now) // E5
+      oscillator2.type = 'sine'
+      
+      // Third tone (high)
+      oscillator3.frequency.setValueAtTime(783.99, now) // G5
+      oscillator3.type = 'sine'
+      
+      // Volume envelope - louder and more noticeable
+      gainNode.gain.setValueAtTime(0, now)
+      gainNode.gain.linearRampToValueAtTime(0.6, now + 0.01) // Louder
+      gainNode.gain.exponentialRampToValueAtTime(0.3, now + 0.2)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.8)
+      
+      // Start oscillators
+      oscillator1.start(now)
+      oscillator2.start(now)
+      oscillator3.start(now)
+      
+      // Stop oscillators
+      oscillator1.stop(now + 0.8)
+      oscillator2.stop(now + 0.8)
+      oscillator3.stop(now + 0.8)
+      
+      // Play a second chime after a short delay for emphasis
+      setTimeout(() => {
+        try {
+          const now2 = audioContext.currentTime
+          const osc1 = audioContext.createOscillator()
+          const osc2 = audioContext.createOscillator()
+          const gain = audioContext.createGain()
+          
+          osc1.connect(gain)
+          osc2.connect(gain)
+          gain.connect(audioContext.destination)
+          
+          osc1.frequency.setValueAtTime(659.25, now2) // E5
+          osc2.frequency.setValueAtTime(783.99, now2) // G5
+          osc1.type = 'sine'
+          osc2.type = 'sine'
+          
+          gain.gain.setValueAtTime(0, now2)
+          gain.gain.linearRampToValueAtTime(0.5, now2 + 0.01)
+          gain.gain.exponentialRampToValueAtTime(0.01, now2 + 0.5)
+          
+          osc1.start(now2)
+          osc2.start(now2)
+          osc1.stop(now2 + 0.5)
+          osc2.stop(now2 + 0.5)
+        } catch (e) {
+          console.log('Second chime failed:', e)
+        }
+      }, 300)
+      
+    } catch (error) {
+      console.log('Could not play notification sound:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (!userQueueNumber) {
+      navigate('/register')
+      return
+    }
+
+    // Initial fetch
+    fetchQueueData()
+    
+    // Set up polling interval - reduced to 3 seconds for real-time updates
+    const interval = setInterval(() => {
+      fetchQueueData()
+    }, 3000)
+    
+    return () => clearInterval(interval)
+  }, [userQueueNumber, navigate, fetchQueueData])
+
+  // Check if it's user's turn and play sound
+  useEffect(() => {
+    if (!userQueueNumber) return
+    
+    const isUserTurn = userQueueNumber === currentServing
+    const wasUserTurn = previousServingRef.current === userQueueNumber
+    const servingChanged = currentServing !== previousServingRef.current
+    
+    console.log('Notification check:', {
+      isUserTurn,
+      wasUserTurn,
+      servingChanged,
+      currentServing,
+      userQueueNumber,
+      hasPlayedSound
+    })
+    
+    // Play sound when it becomes user's turn (not if it was already their turn)
+    if (isUserTurn && !wasUserTurn && servingChanged) {
+      console.log('🎵 Playing notification sound - It\'s your turn!')
+      playNotificationSound()
+      setHasPlayedSound(true)
+      
+      // Show browser notification if permitted
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Your Turn!', {
+          body: `Queue number ${userQueueNumber} - Please come forward!`,
+          icon: '/assets/Screenshot 2025-12-15 at 21.41.07.png',
+          badge: '/assets/Screenshot 2025-12-15 at 21.41.07.png',
+          tag: 'queue-turn', // Prevent duplicate notifications
+          requireInteraction: false
+        })
+      }
+    }
+    
+    // Reset sound flag when serving number changes (so it can play again if needed)
+    if (servingChanged) {
+      previousServingRef.current = currentServing
+      // Reset hasPlayedSound if we're no longer the current serving
+      if (!isUserTurn) {
+        setHasPlayedSound(false)
+      }
+    }
+  }, [currentServing, userQueueNumber, hasPlayedSound])
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+  }, [])
+
+  if (!userQueueNumber) {
+    return null
+  }
+
+  // Check if user is in the active queue (not yet served)
+  const userInActiveQueue = activeQueue.find(item => item.queueNumber === userQueueNumber)
+  const userPosition = userInActiveQueue ? activeQueue.findIndex(item => item.queueNumber === userQueueNumber) + 1 : 0
+  const isUserTurn = userQueueNumber === currentServing
+  const isUserNext = userPosition > 0 && userPosition <= activeQueue.length
+  
+  // Calculate people ahead: customers in active queue before this user
+  const currentNum = parseInt(currentServing.replace('SU-', ''))
+  const userNum = parseInt(userQueueNumber.replace('SU-', ''))
+  const peopleAhead = Math.max(0, userNum - currentNum - 1)
+  
+  // If user has been served (not in active queue and not current), show a message
+  const userHasBeenServed = !isUserTurn && !userInActiveQueue && userNum <= currentNum
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { y: 30, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+        damping: 15,
+      },
+    },
+  }
+
+  const numberVariants = {
+    hidden: { scale: 0, rotate: -180 },
+    visible: {
+      scale: 1,
+      rotate: 0,
+      transition: {
+        type: 'spring',
+        stiffness: 200,
+        damping: 15,
+      },
+    },
+    pulse: {
+      scale: [1, 1.1, 1],
+      transition: {
+        duration: 0.5,
+        repeat: Infinity,
+        repeatDelay: 2,
+      },
+    },
+  }
+
+  return (
+    <div className="queue-screen">
+      <div className="container">
+        <motion.div
+          className="queue-content glass-card"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div
+            className="queue-header"
+            variants={itemVariants}
+          >
+            <motion.img
+              src="/assets/Screenshot 2025-12-15 at 21.41.07.png"
+              alt="Suya"
+              className="header-image"
+              onError={(e) => {
+                e.target.style.display = 'none'
+              }}
+              whileHover={{ scale: 1.05, rotate: 2 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            />
+            <h2 className="queue-title">
+              <FaBell className="title-decoration" />
+              Your Queue Status
+              <FaBell className="title-decoration" />
+            </h2>
+          </motion.div>
+          
+          <motion.div
+            className={`queue-card ${isUserTurn ? 'active-turn' : ''}`}
+            variants={itemVariants}
+            animate={isUserTurn ? {
+              boxShadow: [
+                '0 0 20px rgba(255, 215, 0, 0.5)',
+                '0 0 40px rgba(255, 215, 0, 0.8)',
+                '0 0 20px rgba(255, 215, 0, 0.5)',
+              ],
+            } : {}}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            <div className="queue-number-display">
+              <motion.span
+                className="queue-label"
+                variants={itemVariants}
+              >
+                Your Number
+              </motion.span>
+              <motion.span
+                className="queue-number"
+                variants={numberVariants}
+                animate={isUserTurn ? 'pulse' : ''}
+              >
+                {userQueueNumber}
+              </motion.span>
+              {isUserTurn && (
+                <motion.div
+                  className="turn-indicator"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                >
+                  <FaCheckCircle className="icon-inline" />
+                  YOUR TURN!
+                  <FaCheckCircle className="icon-inline" />
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+
+          <motion.div
+            className="current-serving"
+            variants={itemVariants}
+          >
+            <motion.span
+              className="serving-label"
+              animate={{
+                opacity: [0.7, 1, 0.7],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              Now Serving
+            </motion.span>
+            <motion.span
+              className="serving-number"
+              key={currentServing}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{
+                type: 'spring',
+                stiffness: 300,
+                damping: 20,
+              }}
+            >
+              {currentServing}
+            </motion.span>
+            {peopleAhead > 0 && (
+              <motion.div
+                className="people-ahead"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                {peopleAhead} {peopleAhead === 1 ? 'person' : 'people'} ahead of you
+              </motion.div>
+            )}
+          </motion.div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={isUserTurn ? 'turn' : userHasBeenServed ? 'served' : 'wait'}
+              className={`status-message ${isUserTurn ? 'active' : ''}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <p>
+                {isUserTurn 
+                  ? (
+                    <>
+                      <FaCheckCircle className="icon-inline" />
+                      It's your turn! Please come forward.
+                    </>
+                  )
+                  : userHasBeenServed
+                    ? (
+                      <>
+                        <FaCheckCircle className="icon-inline" />
+                        You've been served! Thank you for visiting.
+                      </>
+                    )
+                    : isUserNext && userPosition > 0
+                      ? (
+                        <>
+                          <HiSparkles className="icon-inline" />
+                          You're #{userPosition} in line. Please relax. We'll call you shortly.
+                          <HiSparkles className="icon-inline" />
+                        </>
+                      )
+                      : (
+                        <>
+                          <HiSparkles className="icon-inline" />
+                          Please relax. We'll call you shortly.
+                          <HiSparkles className="icon-inline" />
+                        </>
+                      )}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          {userHasBeenServed ? (
+            <motion.div
+              className="feedback-prompt-section"
+              variants={itemVariants}
+            >
+              <h3>
+                <FaStar className="section-icon" />
+                Share Your Experience
+              </h3>
+              <motion.button
+                className="btn-primary"
+                onClick={() => navigate('/feedback')}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaStar className="icon-inline" />
+                Rate Your Experience
+                <FaStar className="icon-inline" />
+              </motion.button>
+            </motion.div>
+          ) : (
+            <motion.div
+              className="entertainment-section"
+              variants={itemVariants}
+            >
+              <h3>
+                <FaGamepad className="section-icon" />
+                While You Wait...
+              </h3>
+              <motion.button
+                className="btn-secondary"
+                onClick={() => navigate('/trivia')}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaGamepad className="icon-inline" />
+                Play Christmas Trivia
+                <FaGamepad className="icon-inline" />
+              </motion.button>
+              <motion.button
+                className="btn-secondary"
+                onClick={playNotificationSound}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                style={{ marginTop: '10px', fontSize: '14px', padding: '12px 20px' }}
+              >
+                <FaBell className="icon-inline" />
+                Test Notification Sound
+              </motion.button>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+export default QueueStatus
