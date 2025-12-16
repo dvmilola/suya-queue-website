@@ -486,13 +486,17 @@ export function QueueProvider({ children }) {
           
           // Entry ID for the status form field
           const statusEntryId = localStorage.getItem('statusFormEntryId')
+          console.log('📋 Current Status Form Entry ID from localStorage:', statusEntryId)
+          
           if (!statusEntryId || statusEntryId === 'entry.0') {
-            console.warn('⚠️ Status Form Entry ID not configured or using default. Please configure it in Admin settings.')
-            console.warn('⚠️ Go to Admin → Configure → Enter Status Form Entry ID')
+            console.error('❌ Status Form Entry ID is missing or using default (entry.0)')
+            console.error('❌ This is why "Current Serving" values are empty in Form Responses 2!')
+            console.error('📝 SOLUTION: Go to Admin → Configure → Enter the correct Status Form Entry ID')
+            console.error('📖 See STATUS_FORM_ENTRY_ID_FIX.md for instructions on how to find it')
           }
           
           const finalEntryId = statusEntryId || 'entry.0'
-          console.log('Using Entry ID:', finalEntryId)
+          console.log('🔑 Using Entry ID:', finalEntryId)
           
           const formData = new URLSearchParams()
           formData.append(finalEntryId, number)
