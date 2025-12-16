@@ -8,7 +8,7 @@ import './QueueStatus.css'
 
 function QueueStatus() {
   const navigate = useNavigate()
-  const { userQueueNumber, currentServing, activeQueue, fetchQueueData } = useQueue()
+  const { userQueueNumber, currentServing, activeQueue, queueData, fetchQueueData } = useQueue()
   const [hasPlayedSound, setHasPlayedSound] = useState(false)
   const previousServingRef = useRef(currentServing)
   
@@ -245,6 +245,9 @@ function QueueStatus() {
   
   // Calculate values needed for rendering - MUST be before conditional returns
   const userInActiveQueue = userQueueNumber ? activeQueue.find(item => item.queueNumber === userQueueNumber) : null
+  // Find user's entry in full queue data to get their name
+  const userEntry = userQueueNumber ? queueData.find(item => item.queueNumber === userQueueNumber) : null
+  const userName = userEntry?.name || 'Guest'
   const userPosition = userInActiveQueue ? activeQueue.findIndex(item => item.queueNumber === userQueueNumber) + 1 : 0
   const isUserTurn = userQueueNumber === currentServing
   const isUserNext = userPosition > 0 && userPosition <= activeQueue.length
@@ -453,7 +456,7 @@ function QueueStatus() {
                 className="queue-label"
                 variants={itemVariants}
               >
-                Your Number
+                Hi {userName}, your number is
               </motion.span>
               <motion.span
                 className="queue-number"
