@@ -160,34 +160,63 @@ export function QueueProvider({ children }) {
                 if (!fallbackCsv.includes('<!DOCTYPE html>') && !fallbackCsv.includes('<html')) {
                   const fallbackRows = parseCSV(fallbackCsv)
                   console.log('Form Responses 2 rows:', fallbackRows)
+                  console.log('Form Responses 2 row count:', fallbackRows.length)
                   
                   if (fallbackRows.length > 1) {
                     // Find "Current Serving" column (should be column B, index 1)
                     const headerRow = fallbackRows[0]
+                    console.log('Form Responses 2 header row:', headerRow)
                     let servingColumnIndex = 1 // Default to column B (index 1)
                     
                     // Try to find "Current Serving" column
                     for (let i = 0; i < headerRow.length; i++) {
-                      if (headerRow[i] && headerRow[i].toLowerCase().includes('current serving')) {
+                      const header = headerRow[i] ? headerRow[i].toLowerCase() : ''
+                      console.log(`Checking header[${i}]:`, header)
+                      if (header.includes('current serving') || header.includes('serving')) {
                         servingColumnIndex = i
+                        console.log('✅ Found "Current Serving" column at index:', servingColumnIndex)
                         break
                       }
                     }
                     
+                    console.log('Using column index:', servingColumnIndex)
+                    
                     // Get the last non-empty value in that column
                     for (let i = fallbackRows.length - 1; i >= 1; i--) {
                       const row = fallbackRows[i]
+                      console.log(`Checking row ${i}:`, row)
                       const value = row[servingColumnIndex] ? row[servingColumnIndex].trim().toUpperCase() : null
+                      console.log(`Value at column ${servingColumnIndex}:`, value)
                       if (value && value.match(/^SU-\d{3}$/i)) {
                         console.log('✅ Found current serving from Form Responses 2 (fallback):', value)
                         return value
                       }
                     }
+                    
+                    // If not found in expected column, search all columns in all rows
+                    console.log('⚠️ Not found in expected column, searching all columns...')
+                    for (let i = fallbackRows.length - 1; i >= 1; i--) {
+                      const row = fallbackRows[i]
+                      for (let col = 0; col < row.length; col++) {
+                        const value = row[col] ? row[col].trim().toUpperCase() : null
+                        if (value && value.match(/^SU-\d{3}$/i)) {
+                          console.log(`✅ Found current serving from Form Responses 2 (fallback, column ${col}):`, value)
+                          return value
+                        }
+                      }
+                    }
+                    
+                    console.warn('⚠️ No valid queue number found in Form Responses 2')
+                    console.warn('Searched column index:', servingColumnIndex)
+                    console.warn('All rows:', fallbackRows)
+                  } else {
+                    console.warn('⚠️ Form Responses 2 has no data rows (only header)')
                   }
                 }
               }
             } catch (fallbackError) {
               console.warn('⚠️ Fallback to Form Responses 2 also failed:', fallbackError)
+              console.error('Fallback error details:', fallbackError.message)
             }
             
             console.warn('⚠️ Invalid queue number format:', servingValue)
