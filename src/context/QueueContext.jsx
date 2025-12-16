@@ -126,12 +126,24 @@ export function QueueProvider({ children }) {
   // Load queue data from Google Sheets or localStorage
   const fetchQueueData = useCallback(async () => {
     // First, try to fetch current serving from status sheet
+    // Only update if Status sheet has a newer/higher number (to prevent overwriting admin updates)
     if (googleSheetsUrl) {
       const servingFromStatus = await fetchCurrentServingFromStatus()
-      if (servingFromStatus && servingFromStatus !== currentServing) {
-        setCurrentServing(servingFromStatus)
-        localStorage.setItem('currentServing', servingFromStatus)
-        console.log(`✅ Updated currentServing from Status sheet: ${servingFromStatus}`)
+      if (servingFromStatus) {
+        const statusNum = parseInt(servingFromStatus.replace('SU-', ''))
+        const currentNum = parseInt(currentServing.replace('SU-', ''))
+        
+        // Only update if Status sheet has a higher number (more recent)
+        // This prevents Status sheet from overwriting admin's "Next Customer" updates
+        if (statusNum > currentNum) {
+          setCurrentServing(servingFromStatus)
+          localStorage.setItem('currentServing', servingFromStatus)
+          console.log(`✅ Updated currentServing from Status sheet: ${servingFromStatus}`)
+        } else if (servingFromStatus !== currentServing && statusNum === currentNum) {
+          // Same number, just sync it
+          setCurrentServing(servingFromStatus)
+          localStorage.setItem('currentServing', servingFromStatus)
+        }
       }
     }
     
@@ -229,13 +241,13 @@ export function QueueProvider({ children }) {
             // Try to match user to their submission in the queue data
             // This happens after form submission when user navigates to queue
             const pendingSubmission = sessionStorage.getItem('pendingSubmission')
-            if (pendingSubmission && !userQueueNumber) {
+            if (pendingSubmission) {
               try {
                 const submission = JSON.parse(pendingSubmission)
                 // Find the most recent entry that matches the submission
-                // Match by name (if provided) and timestamp being recent (within last 2 minutes)
+                // Match by name (if provided) and timestamp being recent (within last 5 minutes)
                 const submissionTime = new Date(submission.timestamp).getTime()
-                const twoMinutesAgo = Date.now() - 2 * 60 * 1000
+                const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
                 
                 // Find matching entry - most recent one that matches
                 let matchedEntry = null
@@ -248,9 +260,15 @@ export function QueueProvider({ children }) {
                     entry.name.toLowerCase().includes(submission.name.toLowerCase()) ||
                     submission.name.toLowerCase().includes(entry.name.toLowerCase())
                   
-                  const timeMatches = entryTime > twoMinutesAgo && entryTime <= submissionTime + 60000 // Within 1 minute of submission
+                  // Match by pepper and portion preferences too
+                  const pepperMatches = entry.pepper === submission.pepper
+                  const portionMatches = entry.portion === submission.portion
                   
-                  if (nameMatches && timeMatches) {
+                  // Time should be within 5 minutes of submission
+                  const timeMatches = entryTime > fiveMinutesAgo && entryTime <= submissionTime + 120000 // Within 2 minutes of submission
+                  
+                  // Prefer entries that match name AND preferences, but also accept just recent entries
+                  if (timeMatches && (nameMatches || (pepperMatches && portionMatches))) {
                     matchedEntry = entry
                     break
                   }
@@ -262,8 +280,8 @@ export function QueueProvider({ children }) {
                   sessionStorage.removeItem('pendingSubmission')
                   console.log(`✅ Matched user to queue number: ${matchedEntry.queueNumber}`)
                 } else {
-                  console.log('⏳ Waiting for submission to appear in Google Sheets...')
-                  // Keep pendingSubmission for next poll
+                  console.log('⏳ Waiting for submission to appear in Google Sheets... (will keep checking)')
+                  // Keep pendingSubmission for next poll - will try again in 3 seconds
                 }
               } catch (error) {
                 console.warn('Error matching user submission:', error)
