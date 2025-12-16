@@ -485,17 +485,19 @@ export function QueueProvider({ children }) {
           const formAction = `https://docs.google.com/forms/d/e/${formId}/formResponse`
           
           // Entry ID for the status form field
-          const statusEntryId = localStorage.getItem('statusFormEntryId')
+          let statusEntryId = localStorage.getItem('statusFormEntryId')
           console.log('📋 Current Status Form Entry ID from localStorage:', statusEntryId)
           
+          // Auto-save the correct Entry ID if not set
           if (!statusEntryId || statusEntryId === 'entry.0') {
-            console.error('❌ Status Form Entry ID is missing or using default (entry.0)')
-            console.error('❌ This is why "Current Serving" values are empty in Form Responses 2!')
-            console.error('📝 SOLUTION: Go to Admin → Configure → Enter the correct Status Form Entry ID')
-            console.error('📖 See STATUS_FORM_ENTRY_ID_FIX.md for instructions on how to find it')
+            console.warn('⚠️ Status Form Entry ID not saved in localStorage')
+            console.log('💾 Auto-saving Entry ID: entry.1883307002')
+            statusEntryId = 'entry.1883307002'
+            localStorage.setItem('statusFormEntryId', statusEntryId)
+            console.log('✅ Entry ID saved to localStorage')
           }
           
-          const finalEntryId = statusEntryId || 'entry.1883307002'
+          const finalEntryId = statusEntryId
           console.log('🔑 Using Entry ID:', finalEntryId)
           
           if (finalEntryId === 'entry.1883307002') {
