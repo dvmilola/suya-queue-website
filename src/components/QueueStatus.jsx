@@ -11,6 +11,13 @@ function QueueStatus() {
   const { userQueueNumber, currentServing, activeQueue, fetchQueueData } = useQueue()
   const [hasPlayedSound, setHasPlayedSound] = useState(false)
   const previousServingRef = useRef(currentServing)
+  
+  // Track loading timeout for error handling - MUST be declared before any conditional returns
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const [loadingStartTime] = useState(() => Date.now())
+  
+  // Force re-render when userQueueNumber is assigned - MUST be declared before any conditional returns
+  const [renderKey, setRenderKey] = useState(0)
 
   // Generate notification sound using Web Audio API
   // Note: Audio file support removed since file doesn't exist - using Web Audio API directly
@@ -198,10 +205,6 @@ function QueueStatus() {
 
   // If there's a pending submission but no userQueueNumber yet, show loading state
   const pendingSubmission = sessionStorage.getItem('pendingSubmission')
-  
-  // Track loading timeout for error handling
-  const [loadingTimeout, setLoadingTimeout] = useState(false)
-  const [loadingStartTime] = useState(() => Date.now())
   
   // Set timeout for loading state (30 seconds)
   useEffect(() => {
