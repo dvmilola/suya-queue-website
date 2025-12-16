@@ -31,8 +31,8 @@ function Welcome() {
           </div>
 
           <h1 className="welcome-title">
-            Welcome to the{' '}
-            <span className="highlight-text">Suya Experience</span>
+            Welcome to{' '}
+            <span className="highlight-text">City of David's Suya Experience</span>
           </h1>
 
           <p className="subtitle">
