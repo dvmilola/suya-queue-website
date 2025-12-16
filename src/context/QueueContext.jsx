@@ -223,32 +223,22 @@ export function QueueProvider({ children }) {
               })
               
             setQueueData(data)
-            console.log(`Loaded ${data.length} queue items from Google Sheets`)
+            console.log(`✅ Loaded ${data.length} queue items from Google Sheets`)
             return
             }
           }
         }
       } catch (error) {
-        console.warn('Error fetching from Google Sheets, using localStorage:', error)
-        console.warn('Error details:', error.message)
+        console.error('❌ Error fetching from Google Sheets:', error)
+        console.error('Error details:', error.message)
+        // Don't fall back to localStorage - only use Google Sheets
+        setQueueData([])
+        console.warn('⚠️ Queue data will only load from Google Sheets. Make sure your sheet is public and URL is correct.')
       }
-    }
-    
-    // Fallback to localStorage
-    try {
-      const localQueue = JSON.parse(localStorage.getItem('localQueue') || '[]')
-      const data = localQueue.map((item, index) => ({
-        number: index + 1,
-        queueNumber: item.queueNumber || `SU-${String(index + 1).padStart(3, '0')}`,
-        timestamp: item.timestamp || '',
-        name: item.name || 'Guest',
-        pepper: item.pepper || 'normal',
-        portion: item.portion || 'regular'
-      }))
-      setQueueData(data)
-      console.log(`Loaded ${data.length} queue items from localStorage`)
-    } catch (error) {
-      console.error('Error loading from localStorage:', error)
+    } else {
+      // No Google Sheets URL configured - clear queue data
+      setQueueData([])
+      console.warn('⚠️ No Google Sheets URL configured. Queue data will be empty until configured.')
     }
   }, [googleSheetsUrl, currentServing, fetchCurrentServingFromStatus])
 
