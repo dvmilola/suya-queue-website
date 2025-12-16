@@ -495,8 +495,12 @@ export function QueueProvider({ children }) {
             console.error('📖 See STATUS_FORM_ENTRY_ID_FIX.md for instructions on how to find it')
           }
           
-          const finalEntryId = statusEntryId || 'entry.0'
+          const finalEntryId = statusEntryId || 'entry.1883307002'
           console.log('🔑 Using Entry ID:', finalEntryId)
+          
+          if (finalEntryId === 'entry.1883307002') {
+            console.log('✅ Using correct Entry ID: entry.1883307002')
+          }
           
           const formData = new URLSearchParams()
           formData.append(finalEntryId, number)
