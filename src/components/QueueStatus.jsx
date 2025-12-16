@@ -246,31 +246,35 @@ function QueueStatus() {
   }
 
   // Check if user is in the active queue (not yet served)
-  const userInActiveQueue = activeQueue.find(item => item.queueNumber === userQueueNumber)
+  // Only calculate if we have a queue number
+  const userInActiveQueue = userQueueNumber ? activeQueue.find(item => item.queueNumber === userQueueNumber) : null
   const userPosition = userInActiveQueue ? activeQueue.findIndex(item => item.queueNumber === userQueueNumber) + 1 : 0
   const isUserTurn = userQueueNumber === currentServing
   const isUserNext = userPosition > 0 && userPosition <= activeQueue.length
   
   // Calculate people ahead: customers in active queue before this user
   const currentNum = parseInt(currentServing.replace('SU-', ''))
-  const userNum = parseInt(userQueueNumber.replace('SU-', ''))
+  const userNum = userQueueNumber ? parseInt(userQueueNumber.replace('SU-', '')) : 0
   const peopleAhead = Math.max(0, userNum - currentNum - 1)
   
   // If user has been served (not in active queue and not current), show a message
-  const userHasBeenServed = !isUserTurn && !userInActiveQueue && userNum <= currentNum
+  // User is served if: not their turn AND (not in active queue OR their number is <= current serving)
+  const userHasBeenServed = userQueueNumber ? (!isUserTurn && userNum <= currentNum) : false
   
-  // Debug logging
+  // Debug logging - only when we have a queue number
   useEffect(() => {
-    console.log('🎮 QueueStatus Debug:')
-    console.log('  userQueueNumber:', userQueueNumber)
-    console.log('  currentServing:', currentServing)
-    console.log('  userNum:', userNum, 'currentNum:', currentNum)
-    console.log('  userInActiveQueue:', userInActiveQueue)
-    console.log('  isUserTurn:', isUserTurn)
-    console.log('  userHasBeenServed:', userHasBeenServed)
-    console.log('  activeQueue:', activeQueue)
-    console.log('  Should show entertainment?', !userHasBeenServed)
-  }, [userQueueNumber, currentServing, userInActiveQueue, isUserTurn, userHasBeenServed, activeQueue, userNum, currentNum])
+    if (userQueueNumber) {
+      console.log('🎮 QueueStatus Debug:')
+      console.log('  userQueueNumber:', userQueueNumber)
+      console.log('  currentServing:', currentServing)
+      console.log('  userNum:', userNum, 'currentNum:', currentNum)
+      console.log('  userInActiveQueue:', userInActiveQueue)
+      console.log('  isUserTurn:', isUserTurn)
+      console.log('  userHasBeenServed:', userHasBeenServed)
+      console.log('  activeQueue length:', activeQueue.length)
+      console.log('  Should show entertainment?', !userHasBeenServed)
+    }
+  }, [userQueueNumber, currentServing, userInActiveQueue, isUserTurn, userHasBeenServed, activeQueue.length, userNum, currentNum])
 
   const containerVariants = {
     hidden: { opacity: 0 },
