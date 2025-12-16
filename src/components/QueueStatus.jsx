@@ -247,7 +247,10 @@ function QueueStatus() {
   const userInActiveQueue = userQueueNumber ? activeQueue.find(item => item.queueNumber === userQueueNumber) : null
   // Find user's entry in full queue data to get their name
   const userEntry = userQueueNumber ? queueData.find(item => item.queueNumber === userQueueNumber) : null
-  const userName = userEntry?.name || 'Guest'
+  // Use name from queueData if available, otherwise fall back to sessionStorage (for immediate display)
+  const userNameFromQueue = userEntry?.name
+  const userNameFromStorage = sessionStorage.getItem('userName')
+  const userName = userNameFromQueue || userNameFromStorage || 'Guest'
   const userPosition = userInActiveQueue ? activeQueue.findIndex(item => item.queueNumber === userQueueNumber) + 1 : 0
   const isUserTurn = userQueueNumber === currentServing
   const isUserNext = userPosition > 0 && userPosition <= activeQueue.length
@@ -366,7 +369,8 @@ function QueueStatus() {
       opacity: 1,
       transition: {
         staggerChildren: 0.15,
-        delayChildren: 0.2,
+        delayChildren: 0.1,
+        duration: 0.4,
       },
     },
   }
@@ -409,6 +413,7 @@ function QueueStatus() {
     <div className="queue-screen">
       <div className="container">
         <motion.div
+          key={`queue-content-${userQueueNumber}-${renderKey}`}
           className="queue-content glass-card"
           variants={containerVariants}
           initial="hidden"

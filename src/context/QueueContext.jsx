@@ -456,6 +456,11 @@ export function QueueProvider({ children }) {
                   console.log(`✅ Matched user to queue number: ${matchedEntry.queueNumber}`)
                   setUserQueueNumber(matchedEntry.queueNumber)
                   sessionStorage.setItem('userQueueNumber', matchedEntry.queueNumber)
+                  // Store user's name in sessionStorage for immediate display
+                  // This ensures the personalized greeting shows even before queueData fully loads
+                  if (matchedEntry.name) {
+                    sessionStorage.setItem('userName', matchedEntry.name)
+                  }
                   sessionStorage.removeItem('pendingSubmission')
                   // Force a re-fetch to ensure activeQueue is updated immediately
                   // This ensures the entertainment section shows right away
