@@ -101,6 +101,16 @@ function Admin() {
 
   // Use activeQueue from context (already filtered and sorted)
   const waitingQueue = activeQueue
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 Admin Debug Info:')
+    console.log('  currentServing:', currentServing)
+    console.log('  queueData length:', queueData.length)
+    console.log('  activeQueue length:', activeQueue.length)
+    console.log('  queueData:', queueData)
+    console.log('  activeQueue:', activeQueue)
+  }, [currentServing, queueData, activeQueue])
 
   const containerVariants = {
     hidden: { opacity: 0 },
