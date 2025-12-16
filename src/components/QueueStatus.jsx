@@ -198,11 +198,54 @@ function QueueStatus() {
 
   // If there's a pending submission but no userQueueNumber yet, show loading state
   const pendingSubmission = sessionStorage.getItem('pendingSubmission')
+  
+  // Track loading timeout for error handling
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const [loadingStartTime] = useState(() => Date.now())
+  
+  // Set timeout for loading state (30 seconds)
+  useEffect(() => {
+    if (!userQueueNumber && pendingSubmission) {
+      const timeout = setTimeout(() => {
+        const elapsed = Date.now() - loadingStartTime
+        if (elapsed >= 30000) { // 30 seconds
+          console.warn('⚠️ Loading timeout: Queue number not found after 30 seconds')
+          setLoadingTimeout(true)
+        }
+      }, 30000)
+      
+      return () => clearTimeout(timeout)
+    } else {
+      setLoadingTimeout(false)
+    }
+  }, [userQueueNumber, pendingSubmission, loadingStartTime])
+  
   if (!userQueueNumber && !pendingSubmission) {
     // No queue number and no pending submission - should redirect to register
     // (handled in useEffect, but return null here to prevent flash)
     return null
   }
+
+  // Track loading timeout for error handling
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const [loadingStartTime] = useState(() => Date.now())
+  
+  // Set timeout for loading state (30 seconds)
+  useEffect(() => {
+    if (!userQueueNumber && pendingSubmission) {
+      const timeout = setTimeout(() => {
+        const elapsed = Date.now() - loadingStartTime
+        if (elapsed >= 30000) { // 30 seconds
+          console.warn('⚠️ Loading timeout: Queue number not found after 30 seconds')
+          setLoadingTimeout(true)
+        }
+      }, 30000)
+      
+      return () => clearTimeout(timeout)
+    } else {
+      setLoadingTimeout(false)
+    }
+  }, [userQueueNumber, pendingSubmission, loadingStartTime])
 
   // Show loading state if we have a pending submission but no queue number yet
   if (!userQueueNumber && pendingSubmission) {
@@ -214,31 +257,73 @@ function QueueStatus() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <h2 className="queue-title">
-              <FaBell className="title-decoration" />
-              Getting Your Queue Number...
-              <FaBell className="title-decoration" />
-            </h2>
-            <motion.div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                margin: '30px auto'
-              }}
-            >
-              <FaSpinner 
-                className="icon-spin"
-                style={{
-                  fontSize: '60px',
-                  color: '#ffd700'
-                }}
-              />
-            </motion.div>
-            <p className="status-message" style={{ textAlign: 'center', color: 'rgba(255,255,255,0.8)' }}>
-              Please wait while we retrieve your queue number from Google Sheets.
-              <br />
-              This may take a few moments...
-            </p>
+            {loadingTimeout ? (
+              <>
+                <h2 className="queue-title">
+                  <FaBell className="title-decoration" />
+                  Having Trouble?
+                  <FaBell className="title-decoration" />
+                </h2>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    textAlign: 'center',
+                    padding: '20px'
+                  }}
+                >
+                  <p className="status-message" style={{ color: 'rgba(255,255,255,0.9)', marginBottom: '20px', fontSize: '16px' }}>
+                    We're having trouble retrieving your queue number.
+                    <br />
+                    <br />
+                    Please try refreshing the page.
+                  </p>
+                  <motion.button
+                    className="btn-primary"
+                    onClick={() => window.location.reload()}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{
+                      marginTop: '15px',
+                      padding: '14px 28px',
+                      fontSize: '16px'
+                    }}
+                  >
+                    <FaSpinner className="icon-inline" />
+                    Refresh Page
+                    <FaSpinner className="icon-inline" />
+                  </motion.button>
+                </motion.div>
+              </>
+            ) : (
+              <>
+                <h2 className="queue-title">
+                  <FaBell className="title-decoration" />
+                  Getting Your Queue Number...
+                  <FaBell className="title-decoration" />
+                </h2>
+                <motion.div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    margin: '30px auto'
+                  }}
+                >
+                  <FaSpinner 
+                    className="icon-spin"
+                    style={{
+                      fontSize: '60px',
+                      color: '#ffd700'
+                    }}
+                  />
+                </motion.div>
+                <p className="status-message" style={{ textAlign: 'center', color: 'rgba(255,255,255,0.8)' }}>
+                  Please wait while we retrieve your queue number from Google Sheets.
+                  <br />
+                  This may take a few moments...
+                </p>
+              </>
+            )}
           </motion.div>
         </div>
       </div>
