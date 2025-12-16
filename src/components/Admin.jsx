@@ -99,8 +99,25 @@ function Admin() {
     alert('Configuration saved!')
   }
 
-  // Use activeQueue from context (already filtered and sorted)
+  // Show ALL customers in admin (not just waiting ones)
+  // This helps admin see everyone who has registered
+  const allQueue = queueData.sort((a, b) => {
+    const aNum = parseInt(a.queueNumber.replace('SU-', ''))
+    const bNum = parseInt(b.queueNumber.replace('SU-', ''))
+    return aNum - bNum
+  })
+  
+  // Separate into waiting and served for display
   const waitingQueue = activeQueue
+  const servedQueue = queueData.filter(item => {
+    const itemNum = parseInt(item.queueNumber.replace('SU-', ''))
+    const servingNum = parseInt(currentServing.replace('SU-', ''))
+    return itemNum <= servingNum
+  }).sort((a, b) => {
+    const aNum = parseInt(a.queueNumber.replace('SU-', ''))
+    const bNum = parseInt(b.queueNumber.replace('SU-', ''))
+    return aNum - bNum
+  })
   
   // Debug logging
   useEffect(() => {
@@ -108,9 +125,11 @@ function Admin() {
     console.log('  currentServing:', currentServing)
     console.log('  queueData length:', queueData.length)
     console.log('  activeQueue length:', activeQueue.length)
+    console.log('  waitingQueue length:', waitingQueue.length)
+    console.log('  servedQueue length:', servedQueue.length)
     console.log('  queueData:', queueData)
     console.log('  activeQueue:', activeQueue)
-  }, [currentServing, queueData, activeQueue])
+  }, [currentServing, queueData, activeQueue, waitingQueue, servedQueue])
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -377,11 +396,11 @@ function Admin() {
                 >
                   <h3>
                     <FaList className="section-icon" />
-                    Queue List ({waitingQueue.length} waiting)
+                    Queue List ({waitingQueue.length} waiting, {servedQueue.length} served)
                   </h3>
                   <div className="queue-list">
                     <AnimatePresence>
-                      {waitingQueue.length === 0 ? (
+                      {allQueue.length === 0 ? (
                         <motion.p
                           className="empty-queue"
                           initial={{ opacity: 0 }}
@@ -393,39 +412,77 @@ function Admin() {
                           <HiSparkles className="icon-inline" />
                         </motion.p>
                       ) : (
-                        waitingQueue.map((item, index) => {
-                          return (
-                            <motion.div
-                              key={item.queueNumber}
-                              className="queue-item"
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 20 }}
-                              transition={{ delay: index * 0.05 }}
-                              whileHover={{ scale: 1.02, x: 5 }}
-                            >
-                              <div className="queue-item-info">
-                                <div className="queue-item-number">{item.queueNumber}</div>
-                                <div className="queue-item-details">
-                                  {item.name} • {getPepperIcon(item.pepper)} {item.pepper} • {getPortionIcon(item.portion)} {item.portion}
-                                </div>
-                              </div>
-                              <motion.div
-                                className="queue-item-status waiting"
-                                animate={{
-                                  scale: [1, 1.1, 1],
-                                }}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  ease: 'easeInOut',
-                                }}
-                              >
-                                Waiting
-                              </motion.div>
-                            </motion.div>
-                          )
-                        })
+                        <>
+                          {/* Waiting customers */}
+                          {waitingQueue.length > 0 && (
+                            <div className="queue-section">
+                              <h4 className="queue-section-title">Waiting ({waitingQueue.length})</h4>
+                              {waitingQueue.map((item, index) => {
+                                return (
+                                  <motion.div
+                                    key={item.queueNumber}
+                                    className="queue-item"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    whileHover={{ scale: 1.02, x: 5 }}
+                                  >
+                                    <div className="queue-item-info">
+                                      <div className="queue-item-number">{item.queueNumber}</div>
+                                      <div className="queue-item-details">
+                                        {item.name} • {getPepperIcon(item.pepper)} {item.pepper} • {getPortionIcon(item.portion)} {item.portion}
+                                      </div>
+                                    </div>
+                                    <motion.div
+                                      className="queue-item-status waiting"
+                                      animate={{
+                                        scale: [1, 1.1, 1],
+                                      }}
+                                      transition={{
+                                        duration: 2,
+                                        repeat: Infinity,
+                                        ease: 'easeInOut',
+                                      }}
+                                    >
+                                      Waiting
+                                    </motion.div>
+                                  </motion.div>
+                                )
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Served customers */}
+                          {servedQueue.length > 0 && (
+                            <div className="queue-section">
+                              <h4 className="queue-section-title">Served ({servedQueue.length})</h4>
+                              {servedQueue.map((item, index) => {
+                                return (
+                                  <motion.div
+                                    key={item.queueNumber}
+                                    className="queue-item queue-item-served"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    transition={{ delay: index * 0.05 }}
+                                  >
+                                    <div className="queue-item-info">
+                                      <div className="queue-item-number">{item.queueNumber}</div>
+                                      <div className="queue-item-details">
+                                        {item.name} • {getPepperIcon(item.pepper)} {item.pepper} • {getPortionIcon(item.portion)} {item.portion}
+                                      </div>
+                                    </div>
+                                    <div className="queue-item-status served">
+                                      <FaCheckCircle className="icon-inline" />
+                                      Served
+                                    </div>
+                                  </motion.div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </>
                       )}
                     </AnimatePresence>
                   </div>

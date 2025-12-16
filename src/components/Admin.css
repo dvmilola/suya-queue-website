@@ -202,6 +202,30 @@
   border: 2px solid rgba(76, 175, 80, 0.3);
 }
 
+.queue-item-status.served {
+  color: var(--text-light);
+  border: 2px solid rgba(128, 128, 128, 0.3);
+  opacity: 0.7;
+}
+
+.queue-item-served {
+  opacity: 0.8;
+  border-left-color: rgba(128, 128, 128, 0.5);
+}
+
+.queue-section {
+  margin-bottom: 20px;
+}
+
+.queue-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
 .empty-queue {
   text-align: center;
   color: var(--text-light);
