@@ -226,27 +226,6 @@ function QueueStatus() {
     return null
   }
 
-  // Track loading timeout for error handling
-  const [loadingTimeout, setLoadingTimeout] = useState(false)
-  const [loadingStartTime] = useState(() => Date.now())
-  
-  // Set timeout for loading state (30 seconds)
-  useEffect(() => {
-    if (!userQueueNumber && pendingSubmission) {
-      const timeout = setTimeout(() => {
-        const elapsed = Date.now() - loadingStartTime
-        if (elapsed >= 30000) { // 30 seconds
-          console.warn('⚠️ Loading timeout: Queue number not found after 30 seconds')
-          setLoadingTimeout(true)
-        }
-      }, 30000)
-      
-      return () => clearTimeout(timeout)
-    } else {
-      setLoadingTimeout(false)
-    }
-  }, [userQueueNumber, pendingSubmission, loadingStartTime])
-
   // Show loading state if we have a pending submission but no queue number yet
   if (!userQueueNumber && pendingSubmission) {
     return (
