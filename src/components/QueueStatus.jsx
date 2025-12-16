@@ -612,16 +612,6 @@ function QueueStatus() {
                   Play Christmas Trivia
                   <FaGamepad className="icon-inline" />
                 </motion.button>
-                <motion.button
-                  className="btn-secondary"
-                  onClick={playNotificationSound}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  style={{ marginTop: '10px', fontSize: '14px', padding: '12px 20px' }}
-                >
-                  <FaBell className="icon-inline" />
-                  Test Notification Sound
-                </motion.button>
               </motion.div>
             ) : (
               <motion.div
