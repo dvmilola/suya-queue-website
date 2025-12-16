@@ -11,17 +11,42 @@ export function QueueProvider({ children }) {
     // Try to get from sessionStorage first (from current session)
     return sessionStorage.getItem('userQueueNumber') || null
   })
+  // ============================================
+  // HARDCODED CONFIGURATION - NO USER SETUP NEEDED!
+  // ============================================
+  // All URLs are hardcoded here so users don't need to configure anything
+  // Just access the site and it works!
+  
+  // ============================================
+  // HARDCODED CONFIGURATION - NO USER SETUP NEEDED!
+  // ============================================
+  // All URLs are hardcoded here so users don't need to configure anything
+  // Just access the site and it works!
+  
+  const HARDCODED_GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1rSZoNeQjKfWLW0aJoZqs38aG9BMTMz547MVP6QFiNtw/edit'
+  const HARDCODED_GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSctFgoQkg8aTeron5gon5uC1thSqk8xmx1caadCmuMzk0frmg/viewform'
+  const HARDCODED_STATUS_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSffuGdmjKo2RDGXzVnH6mbSYTwYmmy-j4r7mnvga8IO9TTAQQ/viewform'
+  const HARDCODED_STATUS_SHEET_GID = '373003429'
+  const HARDCODED_STATUS_FORM_ENTRY_ID = 'entry.1883307002'
+  
   const [googleSheetsUrl, setGoogleSheetsUrl] = useState(() => {
-    return localStorage.getItem('googleSheetsUrl') || ''
+    // Always use hardcoded URL - users don't need to configure
+    return HARDCODED_GOOGLE_SHEETS_URL || localStorage.getItem('googleSheetsUrl') || ''
   })
+  
   const [googleFormUrl, setGoogleFormUrl] = useState(() => {
-    return localStorage.getItem('googleFormUrl') || ''
+    // Always use hardcoded URL - users don't need to configure
+    return HARDCODED_GOOGLE_FORM_URL || localStorage.getItem('googleFormUrl') || ''
   })
+  
   const [statusSheetGid, setStatusSheetGid] = useState(() => {
-    return localStorage.getItem('statusSheetGid') || '373003429' // Default to user's status sheet GID
+    // Always use hardcoded GID - users don't need to configure
+    return HARDCODED_STATUS_SHEET_GID
   })
+  
   const [statusFormUrl, setStatusFormUrl] = useState(() => {
-    return localStorage.getItem('statusFormUrl') || 'https://docs.google.com/forms/d/e/1FAIpQLSffuGdmjKo2RDGXzVnH6mbSYTwYmmy-j4r7mnvga8IO9TTAQQ/viewform'
+    // Always use hardcoded URL - users don't need to configure
+    return HARDCODED_STATUS_FORM_URL
   })
 
   // Compute active queue (filter out served customers)
@@ -494,20 +519,8 @@ export function QueueProvider({ children }) {
         if (formId) {
           const formAction = `https://docs.google.com/forms/d/e/${formId}/formResponse`
           
-          // Entry ID for the status form field
-          let statusEntryId = localStorage.getItem('statusFormEntryId')
-          console.log('📋 Current Status Form Entry ID from localStorage:', statusEntryId)
-          
-          // Auto-save the correct Entry ID if not set
-          if (!statusEntryId || statusEntryId === 'entry.0') {
-            console.warn('⚠️ Status Form Entry ID not saved in localStorage')
-            console.log('💾 Auto-saving Entry ID: entry.1883307002')
-            statusEntryId = 'entry.1883307002'
-            localStorage.setItem('statusFormEntryId', statusEntryId)
-            console.log('✅ Entry ID saved to localStorage')
-          }
-          
-          const finalEntryId = statusEntryId
+          // Entry ID for the status form field - HARDCODED, no user configuration needed
+          const finalEntryId = HARDCODED_STATUS_FORM_ENTRY_ID
           console.log('🔑 Using Entry ID:', finalEntryId)
           
           if (finalEntryId === 'entry.1883307002') {
