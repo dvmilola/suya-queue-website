@@ -258,6 +258,19 @@ function QueueStatus() {
   
   // If user has been served (not in active queue and not current), show a message
   const userHasBeenServed = !isUserTurn && !userInActiveQueue && userNum <= currentNum
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🎮 QueueStatus Debug:')
+    console.log('  userQueueNumber:', userQueueNumber)
+    console.log('  currentServing:', currentServing)
+    console.log('  userNum:', userNum, 'currentNum:', currentNum)
+    console.log('  userInActiveQueue:', userInActiveQueue)
+    console.log('  isUserTurn:', isUserTurn)
+    console.log('  userHasBeenServed:', userHasBeenServed)
+    console.log('  activeQueue:', activeQueue)
+    console.log('  Should show entertainment?', !userHasBeenServed)
+  }, [userQueueNumber, currentServing, userInActiveQueue, isUserTurn, userHasBeenServed, activeQueue, userNum, currentNum])
 
   const containerVariants = {
     hidden: { opacity: 0 },
