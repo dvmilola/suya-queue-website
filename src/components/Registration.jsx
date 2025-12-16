@@ -51,7 +51,15 @@ function Registration() {
 
     // Require Google Form URL - no localStorage fallback
     if (!googleFormUrl) {
-      alert('⚠️ Google Form URL is not configured. Please configure it in the Admin settings.')
+      // Show a more helpful message and navigate to admin
+      const shouldConfigure = window.confirm(
+        '⚠️ Google Form URL is not configured.\n\n' +
+        'Click OK to go to the setup page and configure it.\n' +
+        'This only needs to be done once per device.'
+      )
+      if (shouldConfigure) {
+        navigate('/admin')
+      }
       setSubmitting(false)
       submissionInProgress.current = false
       return
@@ -229,6 +237,45 @@ function Registration() {
             </h2>
             <p className="form-subtitle">Tell us your preferences</p>
           </motion.div>
+
+          {/* Show setup link if Google Form URL is not configured */}
+          {!googleFormUrl && (
+            <motion.div
+              className="setup-prompt"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                background: 'rgba(255, 193, 7, 0.2)',
+                border: '2px solid rgba(255, 193, 7, 0.5)',
+                borderRadius: '10px',
+                padding: '15px',
+                marginBottom: '20px',
+                textAlign: 'center'
+              }}
+            >
+              <p style={{ color: '#fff', marginBottom: '10px', fontSize: '14px' }}>
+                ⚠️ Google Form URL is not configured
+              </p>
+              <motion.button
+                type="button"
+                onClick={() => navigate('/admin')}
+                style={{
+                  background: 'rgba(255, 193, 7, 0.3)',
+                  border: '1px solid rgba(255, 193, 7, 0.6)',
+                  borderRadius: '8px',
+                  padding: '10px 20px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Configure Now →
+              </motion.button>
+            </motion.div>
+          )}
           
           <form onSubmit={handleSubmit}>
             <motion.div
