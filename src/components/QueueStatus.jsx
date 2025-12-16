@@ -331,7 +331,7 @@ function QueueStatus() {
   
   // Force re-render when userQueueNumber is assigned to ensure entertainment section appears immediately
   // This fixes the issue where entertainment doesn't show until page reload
-  const [renderKey, setRenderKey] = useState(0)
+  // Note: renderKey is already declared at the top of the component (line 20)
   useEffect(() => {
     if (userQueueNumber) {
       console.log('🔄 QueueStatus: User queue number assigned, triggering re-render')
