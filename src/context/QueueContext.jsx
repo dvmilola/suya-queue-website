@@ -181,16 +181,26 @@ export function QueueProvider({ children }) {
                     
                     console.log('Using column index:', servingColumnIndex)
                     
-                    // Get the last non-empty value in that column
+                    // Get the LAST (most recent) non-empty value in that column
+                    // Start from the end (most recent) and work backwards
+                    let latestValue = null
                     for (let i = fallbackRows.length - 1; i >= 1; i--) {
                       const row = fallbackRows[i]
                       console.log(`Checking row ${i}:`, row)
                       const value = row[servingColumnIndex] ? row[servingColumnIndex].trim().toUpperCase() : null
                       console.log(`Value at column ${servingColumnIndex}:`, value)
-                      if (value && value.match(/^SU-\d{3}$/i)) {
-                        console.log('✅ Found current serving from Form Responses 2 (fallback):', value)
-                        return value
+                      if (value && value.match(/^SU-\d{3,4}$/i)) { // Allow 3 or 4 digits (SU-999 or SU-1000)
+                        latestValue = value
+                        console.log(`✅ Found valid queue number: ${value} (row ${i})`)
+                        // Continue to check if there's a more recent one, but this is the latest so far
+                        // Actually, since we're going from newest to oldest, the first match is the latest
+                        break
                       }
+                    }
+                    
+                    if (latestValue) {
+                      console.log('✅ Found current serving from Form Responses 2 (fallback, latest):', latestValue)
+                      return latestValue
                     }
                     
                     // If not found in expected column, search all columns in all rows
@@ -199,7 +209,7 @@ export function QueueProvider({ children }) {
                       const row = fallbackRows[i]
                       for (let col = 0; col < row.length; col++) {
                         const value = row[col] ? row[col].trim().toUpperCase() : null
-                        if (value && value.match(/^SU-\d{3}$/i)) {
+                        if (value && value.match(/^SU-\d{3,4}$/i)) { // Allow 3 or 4 digits
                           console.log(`✅ Found current serving from Form Responses 2 (fallback, column ${col}):`, value)
                           return value
                         }
