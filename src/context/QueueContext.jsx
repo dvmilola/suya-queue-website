@@ -302,6 +302,14 @@ export function QueueProvider({ children }) {
           if (!response.ok) {
             // 400 errors usually mean the sheet isn't public or URL is wrong
             if (response.status === 400) {
+              console.error('❌ 400 Error: Google Sheet is not public!')
+              console.error('📋 SOLUTION: Make your Google Sheet public:')
+              console.error('   1. Open your Google Sheet')
+              console.error('   2. Click "Share" button (top right)')
+              console.error('   3. Click "Change to anyone with the link"')
+              console.error('   4. Set permission to "Viewer"')
+              console.error('   5. Click "Done"')
+              console.error(`   6. Make sure ALL tabs are public (especially "Form Responses 1" tab)`)
               throw new Error('Sheet is not public or URL is incorrect. Please make the sheet public (Share → Anyone with link → Viewer). See TROUBLESHOOTING_400_ERROR.md for help.')
             }
             throw new Error(`HTTP error! status: ${response.status}`)
@@ -345,9 +353,22 @@ export function QueueProvider({ children }) {
               const pepperIndex = findColumnIndex(['pepper', 'spice']) ?? 2
               const portionIndex = findColumnIndex(['portion', 'size', 'type']) ?? 3
               
+              console.log('📊 Column indices found:', {
+                timestamp: timestampIndex,
+                name: nameIndex,
+                pepper: pepperIndex,
+                portion: portionIndex,
+                headerRow: headerRow
+              })
+              
               // Process data rows (skip header row)
               const dataRows = rows.slice(1)
+              console.log(`📋 Processing ${dataRows.length} data rows from Google Sheets`)
+              
               const data = dataRows.map((row, index) => {
+                const name = (row[nameIndex] || '').trim() || 'Guest'
+                console.log(`Row ${index + 1}: name="${name}", pepper="${row[pepperIndex]}", portion="${row[portionIndex]}"`)
+                
                 // Normalize pepper values
                 let pepper = (row[pepperIndex] || '').toLowerCase()
                 if (pepper.includes('no') || pepper === 'no pepper') {
@@ -370,7 +391,7 @@ export function QueueProvider({ children }) {
                   number: index + 1,
                   queueNumber: `SU-${String(index + 1).padStart(3, '0')}`,
                   timestamp: row[timestampIndex] || '',
-                  name: row[nameIndex] || 'Guest',
+                  name: name,
                   pepper: pepper,
                   portion: portion
                 }
