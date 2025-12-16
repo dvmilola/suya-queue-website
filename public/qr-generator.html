@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator - Suya Queue Website</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #1a1a2e;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #0f3460;
+        }
+
+        button {
+            background: linear-gradient(135deg, #0f3460, #16213e);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(15, 52, 96, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .qr-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        #qrcode {
+            display: inline-block;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            margin-top: 20px;
+        }
+
+        .info {
+            background: #e7f3ff;
+            border-left: 4px solid #0f3460;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: left;
+            color: #333;
+        }
+
+        .info strong {
+            color: #0f3460;
+        }
+
+        .size-options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .size-btn {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+
+        .size-btn.active {
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            color: #1a1a2e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 QR Code Generator</h1>
+        <p class="subtitle">Generate a QR code for your Suya Queue Website</p>
+
+        <div class="input-group">
+            <label for="websiteUrl">Website URL:</label>
+            <input 
+                type="url" 
+                id="websiteUrl" 
+                placeholder="https://your-site.netlify.app"
+                value=""
+            >
+        </div>
+
+        <div class="size-options">
+            <button class="size-btn" data-size="200">Small (200px)</button>
+            <button class="size-btn active" data-size="300">Medium (300px)</button>
+            <button class="size-btn" data-size="400">Large (400px)</button>
+            <button class="size-btn" data-size="500">XL (500px)</button>
+        </div>
+
+        <button onclick="generateQR()">Generate QR Code</button>
+
+        <div id="qr-container" class="qr-container" style="display: none;">
+            <div id="qrcode"></div>
+            <button class="download-btn" onclick="downloadQR()">Download QR Code</button>
+        </div>
+
+        <div class="info">
+            <strong>💡 Tips:</strong><br>
+            • Enter your Netlify URL (e.g., https://your-site.netlify.app)<br>
+            • Choose the size that fits your needs<br>
+            • Download and print the QR code for your event<br>
+            • Test the QR code before printing!
+        </div>
+    </div>
+
+    <script>
+        let currentSize = 300;
+        let currentCanvas = null;
+
+        // Size button handlers
+        document.querySelectorAll('.size-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentSize = parseInt(this.dataset.size);
+                const url = document.getElementById('websiteUrl').value;
+                if (url) {
+                    generateQR();
+                }
+            });
+        });
+
+        function generateQR() {
+            const url = document.getElementById('websiteUrl').value.trim();
+            
+            if (!url) {
+                alert('Please enter a website URL!');
+                return;
+            }
+
+            // Validate URL
+            try {
+                new URL(url);
+            } catch (e) {
+                alert('Please enter a valid URL (must start with http:// or https://)');
+                return;
+            }
+
+            const container = document.getElementById('qr-container');
+            const qrcodeDiv = document.getElementById('qrcode');
+            
+            // Clear previous QR code
+            qrcodeDiv.innerHTML = '';
+
+            // Generate QR code
+            QRCode.toCanvas(qrcodeDiv, url, {
+                width: currentSize,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function (error, canvas) {
+                if (error) {
+                    console.error(error);
+                    alert('Error generating QR code. Please try again.');
+                    return;
+                }
+                
+                currentCanvas = canvas;
+                container.style.display = 'block';
+                
+                // Scroll to QR code
+                container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
+
+        function downloadQR() {
+            if (!currentCanvas) {
+                alert('Please generate a QR code first!');
+                return;
+            }
+
+            const url = document.getElementById('websiteUrl').value;
+            const domain = new URL(url).hostname.replace('www.', '');
+            const filename = `suya-queue-qr-${domain}-${currentSize}px.png`;
+
+            currentCanvas.toBlob(function(blob) {
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                URL.revokeObjectURL(link.href);
+            });
+        }
+
+        // Allow Enter key to generate
+        document.getElementById('websiteUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateQR();
+            }
+        });
+
+        // Auto-fill with current page URL if on Netlify
+        if (window.location.hostname.includes('netlify.app')) {
+            document.getElementById('websiteUrl').value = window.location.origin;
+        }
+    </script>
+</body>
+</html>
+
