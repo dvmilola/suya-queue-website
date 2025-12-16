@@ -262,18 +262,27 @@ function QueueStatus() {
   // IMPORTANT: Show entertainment section for ALL waiting users (userNum > currentNum)
   const userHasBeenServed = userQueueNumber ? (!isUserTurn && userNum <= currentNum) : false
   
-  // Force re-render when userQueueNumber changes to ensure entertainment section appears
+  // Force re-render when userQueueNumber is assigned to ensure entertainment section appears immediately
   // This fixes the issue where entertainment doesn't show until page reload
-  const [forceUpdate, setForceUpdate] = useState(0)
+  const [renderKey, setRenderKey] = useState(0)
   useEffect(() => {
     if (userQueueNumber) {
-      // Small delay to ensure activeQueue is updated
-      const timer = setTimeout(() => {
-        setForceUpdate(prev => prev + 1)
-      }, 200)
-      return () => clearTimeout(timer)
+      console.log('🔄 QueueStatus: User queue number assigned, triggering re-render')
+      // Trigger immediate re-render
+      setRenderKey(prev => prev + 1)
+      // Also trigger after a delay to ensure activeQueue is fully updated
+      const timer1 = setTimeout(() => {
+        setRenderKey(prev => prev + 1)
+      }, 300)
+      const timer2 = setTimeout(() => {
+        setRenderKey(prev => prev + 1)
+      }, 800)
+      return () => {
+        clearTimeout(timer1)
+        clearTimeout(timer2)
+      }
     }
-  }, [userQueueNumber, activeQueue.length])
+  }, [userQueueNumber])
   
   // Debug logging - only when we have a queue number
   useEffect(() => {
@@ -495,63 +504,84 @@ function QueueStatus() {
           </AnimatePresence>
 
           {/* Always show entertainment section when waiting, feedback when served */}
-          {userHasBeenServed ? (
-            <motion.div
-              className="feedback-prompt-section"
-              variants={itemVariants}
-            >
-              <h3>
-                <FaStar className="section-icon" />
-                Share Your Experience
-              </h3>
-              <p style={{ marginBottom: '15px', color: 'rgba(255,255,255,0.8)' }}>
-                We'd love to hear your feedback on the Suya experience!
-              </p>
-              <motion.button
-                className="btn-primary"
-                onClick={() => navigate('/feedback')}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+          {/* Recalculate userHasBeenServed inline to ensure it's always current */}
+          {(() => {
+            // Recalculate with current values to ensure accuracy
+            const currentUserNum = userQueueNumber ? parseInt(userQueueNumber.replace('SU-', '')) : 0
+            const currentServingNum = parseInt(currentServing.replace('SU-', ''))
+            const isCurrentlyTurn = userQueueNumber === currentServing
+            const isCurrentlyServed = userQueueNumber ? (!isCurrentlyTurn && currentUserNum <= currentServingNum) : false
+            
+            // Show entertainment if user has queue number and hasn't been served
+            // Default to showing entertainment if we have a queue number (safer default)
+            const shouldShowEntertainment = userQueueNumber && !isCurrentlyServed
+            
+            return shouldShowEntertainment ? (
+              <motion.div
+                key={`entertainment-${renderKey}`}
+                className="entertainment-section"
+                variants={itemVariants}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
               >
-                <FaStar className="icon-inline" />
-                Rate Your Experience
-                <FaStar className="icon-inline" />
-              </motion.button>
-            </motion.div>
-          ) : (
-            <motion.div
-              className="entertainment-section"
-              variants={itemVariants}
-            >
-              <h3>
-                <FaGamepad className="section-icon" />
-                While You Wait...
-              </h3>
-              <p style={{ marginBottom: '15px', color: 'rgba(255,255,255,0.8)' }}>
-                Pass the time with some fun activities!
-              </p>
-              <motion.button
-                className="btn-secondary"
-                onClick={() => navigate('/trivia')}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+                <h3>
+                  <FaGamepad className="section-icon" />
+                  While You Wait...
+                </h3>
+                <p style={{ marginBottom: '15px', color: 'rgba(255,255,255,0.8)' }}>
+                  Pass the time with some fun activities!
+                </p>
+                <motion.button
+                  className="btn-secondary"
+                  onClick={() => navigate('/trivia')}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FaGamepad className="icon-inline" />
+                  Play Christmas Trivia
+                  <FaGamepad className="icon-inline" />
+                </motion.button>
+                <motion.button
+                  className="btn-secondary"
+                  onClick={playNotificationSound}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{ marginTop: '10px', fontSize: '14px', padding: '12px 20px' }}
+                >
+                  <FaBell className="icon-inline" />
+                  Test Notification Sound
+                </motion.button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={`feedback-${renderKey}`}
+                className="feedback-prompt-section"
+                variants={itemVariants}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
               >
-                <FaGamepad className="icon-inline" />
-                Play Christmas Trivia
-                <FaGamepad className="icon-inline" />
-              </motion.button>
-              <motion.button
-                className="btn-secondary"
-                onClick={playNotificationSound}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                style={{ marginTop: '10px', fontSize: '14px', padding: '12px 20px' }}
-              >
-                <FaBell className="icon-inline" />
-                Test Notification Sound
-              </motion.button>
-            </motion.div>
-          )}
+                <h3>
+                  <FaStar className="section-icon" />
+                  Share Your Experience
+                </h3>
+                <p style={{ marginBottom: '15px', color: 'rgba(255,255,255,0.8)' }}>
+                  We'd love to hear your feedback on the Suya experience!
+                </p>
+                <motion.button
+                  className="btn-primary"
+                  onClick={() => navigate('/feedback')}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FaStar className="icon-inline" />
+                  Rate Your Experience
+                  <FaStar className="icon-inline" />
+                </motion.button>
+              </motion.div>
+            )
+          })()}
         </motion.div>
       </div>
     </div>
