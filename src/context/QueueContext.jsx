@@ -23,11 +23,12 @@ export function QueueProvider({ children }) {
   // All URLs are hardcoded here so users don't need to configure anything
   // Just access the site and it works!
   
-  const HARDCODED_GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1rSZoNeQjKfWLW0aJoZqs38aG9BMTMz547MVP6QFiNtw/edit'
-  const HARDCODED_GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSctFgoQkg8aTeron5gon5uC1thSqk8xmx1caadCmuMzk0frmg/viewform'
-  const HARDCODED_STATUS_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSffuGdmjKo2RDGXzVnH6mbSYTwYmmy-j4r7mnvga8IO9TTAQQ/viewform'
-  const HARDCODED_STATUS_SHEET_GID = '373003429'
-  const HARDCODED_STATUS_FORM_ENTRY_ID = 'entry.1883307002'
+      const HARDCODED_GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1rSZoNeQjKfWLW0aJoZqs38aG9BMTMz547MVP6QFiNtw/edit'
+      const HARDCODED_GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSctFgoQkg8aTeron5gon5uC1thSqk8xmx1caadCmuMzk0frmg/viewform'
+      const HARDCODED_STATUS_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSffuGdmjKo2RDGXzVnH6mbSYTwYmmy-j4r7mnvga8IO9TTAQQ/viewform'
+      const HARDCODED_STATUS_SHEET_GID = '373003429'
+      const HARDCODED_STATUS_FORM_ENTRY_ID = 'entry.1883307002'
+      const HARDCODED_FORM_RESPONSES_GID = '781723879' // GID for "Form Responses 1" tab
   
   const [googleSheetsUrl, setGoogleSheetsUrl] = useState(() => {
     // Always use hardcoded URL - users don't need to configure
@@ -293,23 +294,38 @@ export function QueueProvider({ children }) {
       try {
         // Convert Google Sheets URL to CSV export URL
         const sheetId = extractSheetId(googleSheetsUrl)
-        const gid = extractGid(googleSheetsUrl) // Get gid from URL if present
+        let gid = extractGid(googleSheetsUrl) // Get gid from URL if present
+        
+        // Use hardcoded GID for "Form Responses 1" tab if not specified in URL
+        if (!gid || gid === '0') {
+          gid = HARDCODED_FORM_RESPONSES_GID
+          console.log(`📋 Using hardcoded GID for "Form Responses 1" tab: ${gid}`)
+        }
+        
         if (sheetId) {
-          const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
-          
-          const response = await fetch(csvUrl)
+          // Try fetching with the GID
+          let csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
+          console.log(`📥 Fetching queue data from: ${csvUrl}`)
+          let response = await fetch(csvUrl)
           
           if (!response.ok) {
             // 400 errors usually mean the sheet isn't public or URL is wrong
             if (response.status === 400) {
-              console.error('❌ 400 Error: Google Sheet is not public!')
-              console.error('📋 SOLUTION: Make your Google Sheet public:')
+              console.error('❌ 400 Error: Google Sheet is not public OR wrong GID!')
+              console.error('📋 SOLUTION 1: Make your Google Sheet public:')
               console.error('   1. Open your Google Sheet')
               console.error('   2. Click "Share" button (top right)')
               console.error('   3. Click "Change to anyone with the link"')
               console.error('   4. Set permission to "Viewer"')
               console.error('   5. Click "Done"')
-              console.error(`   6. Make sure ALL tabs are public (especially "Form Responses 1" tab)`)
+              console.error('')
+              console.error('📋 SOLUTION 2: Find the correct GID for "Form Responses 1" tab:')
+              console.error('   1. Open your Google Sheet')
+              console.error('   2. Click on the "Form Responses 1" tab (at the bottom)')
+              console.error('   3. Look at the URL in your browser - it will show #gid=XXXXXXXXX')
+              console.error('   4. Copy that number (the XXXXXXXXX part)')
+              console.error(`   5. Update your sheet URL to include it: https://docs.google.com/spreadsheets/d/${sheetId}/edit#gid=XXXXXXXXX`)
+              console.error('   6. The app will automatically use that GID')
               throw new Error('Sheet is not public or URL is incorrect. Please make the sheet public (Share → Anyone with link → Viewer). See TROUBLESHOOTING_400_ERROR.md for help.')
             }
             throw new Error(`HTTP error! status: ${response.status}`)
