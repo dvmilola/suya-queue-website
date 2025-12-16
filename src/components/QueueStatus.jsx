@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQueue } from '../context/QueueContext'
-import { FaBell, FaGamepad, FaCheckCircle, FaStar } from 'react-icons/fa'
+import { FaBell, FaGamepad, FaCheckCircle, FaStar, FaSpinner } from 'react-icons/fa'
 import { HiSparkles } from 'react-icons/hi'
 import './QueueStatus.css'
 
@@ -196,8 +196,53 @@ function QueueStatus() {
     }
   }, [])
 
-  if (!userQueueNumber) {
+  // If there's a pending submission but no userQueueNumber yet, show loading state
+  const pendingSubmission = sessionStorage.getItem('pendingSubmission')
+  if (!userQueueNumber && !pendingSubmission) {
+    // No queue number and no pending submission - should redirect to register
+    // (handled in useEffect, but return null here to prevent flash)
     return null
+  }
+
+  // Show loading state if we have a pending submission but no queue number yet
+  if (!userQueueNumber && pendingSubmission) {
+    return (
+      <div className="queue-screen">
+        <div className="container">
+          <motion.div
+            className="queue-content glass-card"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <h2 className="queue-title">
+              <FaBell className="title-decoration" />
+              Getting Your Queue Number...
+              <FaBell className="title-decoration" />
+            </h2>
+            <motion.div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                margin: '30px auto'
+              }}
+            >
+              <FaSpinner 
+                className="icon-spin"
+                style={{
+                  fontSize: '60px',
+                  color: '#ffd700'
+                }}
+              />
+            </motion.div>
+            <p className="status-message" style={{ textAlign: 'center', color: 'rgba(255,255,255,0.8)' }}>
+              Please wait while we retrieve your queue number from Google Sheets.
+              <br />
+              This may take a few moments...
+            </p>
+          </motion.div>
+        </div>
+      </div>
+    )
   }
 
   // Check if user is in the active queue (not yet served)
