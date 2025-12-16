@@ -77,51 +77,128 @@ export function QueueProvider({ children }) {
   }
 
 
-  // Fetch current serving from status sheet
-  const fetchCurrentServingFromStatus = useCallback(async () => {
-    if (!googleSheetsUrl) return null
-    
-    // Use statusSheetGid if provided, otherwise default to user's status sheet GID
-    const gidToUse = statusSheetGid || '373003429'
-    
-    try {
-      const sheetId = extractSheetId(googleSheetsUrl)
-      if (!sheetId) return null
-      
-      const statusCsvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gidToUse}`
-      const response = await fetch(statusCsvUrl)
-      
-      if (!response.ok) return null
-      
-      const csvText = await response.text()
-      if (csvText.includes('<!DOCTYPE html>') || csvText.includes('<html')) return null
-      
-      const rows = parseCSV(csvText)
-      if (rows.length === 0) return null
-      
-      const firstRow = rows[0]
-      let servingValue = null
-      
-      // Check if first row has "Current Serving" header
-      if (firstRow[0] && firstRow[0].toLowerCase().includes('current serving')) {
-        servingValue = firstRow[1] ? firstRow[1].trim().toUpperCase() : null
-      } else if (firstRow[0] && firstRow[0].match(/^SU-\d{3}$/i)) {
-        // Direct value in first cell
-        servingValue = firstRow[0].trim().toUpperCase()
-      } else if (firstRow[1] && firstRow[1].match(/^SU-\d{3}$/i)) {
-        // Value in second cell
-        servingValue = firstRow[1].trim().toUpperCase()
-      }
-      
-      if (servingValue && servingValue.match(/^SU-\d{3}$/i)) {
-        return servingValue
-      }
-    } catch (error) {
-      console.warn('Error fetching current serving from status sheet:', error)
-    }
-    
-    return null
-  }, [googleSheetsUrl, statusSheetGid])
+      // Fetch current serving from status sheet
+      const fetchCurrentServingFromStatus = useCallback(async () => {
+        if (!googleSheetsUrl) {
+          console.log('⚠️ Cannot fetch status: Google Sheets URL not configured')
+          return null
+        }
+        
+        // Use statusSheetGid if provided, otherwise default to user's status sheet GID
+        const gidToUse = statusSheetGid || '373003429'
+        console.log('📊 Fetching current serving from Status sheet (GID:', gidToUse + ')')
+        
+        try {
+          const sheetId = extractSheetId(googleSheetsUrl)
+          if (!sheetId) {
+            console.error('❌ Could not extract sheet ID from URL')
+            return null
+          }
+          
+          const statusCsvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gidToUse}`
+          console.log('Fetching from:', statusCsvUrl)
+          
+          const response = await fetch(statusCsvUrl)
+          
+          if (!response.ok) {
+            console.error('❌ Status sheet fetch failed:', response.status, response.statusText)
+            return null
+          }
+          
+          const csvText = await response.text()
+          if (csvText.includes('<!DOCTYPE html>') || csvText.includes('<html')) {
+            console.error('❌ Got HTML instead of CSV - sheet might not be public')
+            return null
+          }
+          
+          const rows = parseCSV(csvText)
+          if (rows.length === 0) {
+            console.warn('⚠️ Status sheet is empty')
+            return null
+          }
+          
+          console.log('Status sheet rows:', rows)
+          const firstRow = rows[0]
+          console.log('First row:', firstRow)
+          
+          let servingValue = null
+          
+          // Check if first row has "Current Serving" header
+          if (firstRow[0] && firstRow[0].toLowerCase().includes('current serving')) {
+            servingValue = firstRow[1] ? firstRow[1].trim().toUpperCase() : null
+            console.log('Found "Current Serving" header, value:', servingValue)
+          } else if (firstRow[0] && firstRow[0].match(/^SU-\d{3}$/i)) {
+            // Direct value in first cell
+            servingValue = firstRow[0].trim().toUpperCase()
+            console.log('Found direct value in A1:', servingValue)
+          } else if (firstRow[1] && firstRow[1].match(/^SU-\d{3}$/i)) {
+            // Value in second cell
+            servingValue = firstRow[1].trim().toUpperCase()
+            console.log('Found value in B1:', servingValue)
+          } else {
+            console.warn('⚠️ Could not find queue number in Status sheet')
+            console.warn('Expected format: A1="Current Serving", B1="SU-XXX" or A1="SU-XXX"')
+          }
+          
+          if (servingValue && servingValue.match(/^SU-\d{3}$/i)) {
+            console.log('✅ Found current serving from Status sheet:', servingValue)
+            return servingValue
+          } else {
+            console.warn('⚠️ Status sheet B1 is empty or formula not working')
+            console.log('🔄 Trying fallback: Reading directly from "Form Responses 2" tab...')
+            
+            // Fallback: Read directly from "Form Responses 2" tab (GID: 1767023494)
+            // This is where the Status Form writes responses
+            try {
+              const formResponses2Gid = '1767023494' // GID for "Form Responses 2" tab
+              const formResponses2Url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${formResponses2Gid}`
+              console.log('Fetching from Form Responses 2:', formResponses2Url)
+              
+              const fallbackResponse = await fetch(formResponses2Url)
+              if (fallbackResponse.ok) {
+                const fallbackCsv = await fallbackResponse.text()
+                if (!fallbackCsv.includes('<!DOCTYPE html>') && !fallbackCsv.includes('<html')) {
+                  const fallbackRows = parseCSV(fallbackCsv)
+                  console.log('Form Responses 2 rows:', fallbackRows)
+                  
+                  if (fallbackRows.length > 1) {
+                    // Find "Current Serving" column (should be column B, index 1)
+                    const headerRow = fallbackRows[0]
+                    let servingColumnIndex = 1 // Default to column B (index 1)
+                    
+                    // Try to find "Current Serving" column
+                    for (let i = 0; i < headerRow.length; i++) {
+                      if (headerRow[i] && headerRow[i].toLowerCase().includes('current serving')) {
+                        servingColumnIndex = i
+                        break
+                      }
+                    }
+                    
+                    // Get the last non-empty value in that column
+                    for (let i = fallbackRows.length - 1; i >= 1; i--) {
+                      const row = fallbackRows[i]
+                      const value = row[servingColumnIndex] ? row[servingColumnIndex].trim().toUpperCase() : null
+                      if (value && value.match(/^SU-\d{3}$/i)) {
+                        console.log('✅ Found current serving from Form Responses 2 (fallback):', value)
+                        return value
+                      }
+                    }
+                  }
+                }
+              }
+            } catch (fallbackError) {
+              console.warn('⚠️ Fallback to Form Responses 2 also failed:', fallbackError)
+            }
+            
+            console.warn('⚠️ Invalid queue number format:', servingValue)
+          }
+        } catch (error) {
+          console.error('❌ Error fetching current serving from status sheet:', error)
+          console.error('Error details:', error.message)
+        }
+        
+        return null
+      }, [googleSheetsUrl, statusSheetGid])
 
   // Load queue data from Google Sheets or localStorage
   const fetchQueueData = useCallback(async () => {
@@ -356,30 +433,46 @@ export function QueueProvider({ children }) {
     // Automatically update Status sheet via Google Form if configured
     if (statusFormUrl) {
       try {
+        console.log('🔄 Attempting to submit status update to Google Form...')
+        console.log('Status Form URL:', statusFormUrl)
+        
         // Extract form ID from status form URL
         let formId = null
         const formIdMatchE = statusFormUrl.match(/\/forms\/d\/e\/([a-zA-Z0-9-_]+)/)
         if (formIdMatchE) {
           formId = formIdMatchE[1]
+          console.log('✅ Extracted form ID (e format):', formId)
         } else {
           const formIdMatchD = statusFormUrl.match(/\/forms\/d\/([a-zA-Z0-9-_]+)/)
           if (formIdMatchD) {
             formId = formIdMatchD[1]
+            console.log('✅ Extracted form ID (d format):', formId)
+          } else {
+            console.error('❌ Could not extract form ID from URL:', statusFormUrl)
           }
         }
         
         if (formId) {
           const formAction = `https://docs.google.com/forms/d/e/${formId}/formResponse`
           
-          // Entry ID for the status form field (you'll need to configure this)
-          // For now, we'll use a common entry ID pattern - you may need to update this
-          const statusEntryId = localStorage.getItem('statusFormEntryId') || 'entry.0' // Default, should be configured
+          // Entry ID for the status form field
+          const statusEntryId = localStorage.getItem('statusFormEntryId')
+          if (!statusEntryId || statusEntryId === 'entry.0') {
+            console.warn('⚠️ Status Form Entry ID not configured or using default. Please configure it in Admin settings.')
+            console.warn('⚠️ Go to Admin → Configure → Enter Status Form Entry ID')
+          }
+          
+          const finalEntryId = statusEntryId || 'entry.0'
+          console.log('Using Entry ID:', finalEntryId)
           
           const formData = new URLSearchParams()
-          formData.append(statusEntryId, number)
+          formData.append(finalEntryId, number)
+          
+          console.log('Submitting to:', formAction)
+          console.log('Form data:', { [finalEntryId]: number })
           
           // Submit to form (no-cors mode)
-          await fetch(formAction, {
+          const response = await fetch(formAction, {
             method: 'POST',
             mode: 'no-cors',
             headers: {
@@ -388,15 +481,23 @@ export function QueueProvider({ children }) {
             body: formData,
           })
           
+          // Note: no-cors mode means we can't read the response, but that's OK
           console.log(`✅ Submitted status update to Google Form: ${number}`)
+          console.log('📝 Check "Form Responses 2" tab in Google Sheets to verify the submission appeared')
+        } else {
+          console.error('❌ Cannot submit: Form ID not found')
         }
       } catch (error) {
-        console.warn('Failed to submit status update to Google Form:', error)
+        console.error('❌ Failed to submit status update to Google Form:', error)
+        console.error('Error details:', error.message)
         // Continue anyway - localStorage update still works
       }
+    } else {
+      console.warn('⚠️ Status Form URL not configured. Status updates will only be local (not synced across devices).')
+      console.warn('⚠️ Go to Admin → Configure → Enter Status Form URL')
     }
     
-    console.log(`Updated currentServing to ${number}`)
+    console.log(`✅ Updated currentServing to ${number}`)
   }
 
   const saveUserQueueNumber = (number) => {
