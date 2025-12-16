@@ -258,8 +258,22 @@ function QueueStatus() {
   const peopleAhead = Math.max(0, userNum - currentNum - 1)
   
   // If user has been served (not in active queue and not current), show a message
-  // User is served if: not their turn AND (not in active queue OR their number is <= current serving)
+  // User is served if: not their turn AND their number is <= current serving
+  // IMPORTANT: Show entertainment section for ALL waiting users (userNum > currentNum)
   const userHasBeenServed = userQueueNumber ? (!isUserTurn && userNum <= currentNum) : false
+  
+  // Force re-render when userQueueNumber changes to ensure entertainment section appears
+  // This fixes the issue where entertainment doesn't show until page reload
+  const [forceUpdate, setForceUpdate] = useState(0)
+  useEffect(() => {
+    if (userQueueNumber) {
+      // Small delay to ensure activeQueue is updated
+      const timer = setTimeout(() => {
+        setForceUpdate(prev => prev + 1)
+      }, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [userQueueNumber, activeQueue.length])
   
   // Debug logging - only when we have a queue number
   useEffect(() => {

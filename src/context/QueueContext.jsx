@@ -453,10 +453,15 @@ export function QueueProvider({ children }) {
                 }
                 
                 if (matchedEntry) {
+                  console.log(`✅ Matched user to queue number: ${matchedEntry.queueNumber}`)
                   setUserQueueNumber(matchedEntry.queueNumber)
                   sessionStorage.setItem('userQueueNumber', matchedEntry.queueNumber)
                   sessionStorage.removeItem('pendingSubmission')
-                  console.log(`✅ Matched user to queue number: ${matchedEntry.queueNumber}`)
+                  // Force a re-fetch to ensure activeQueue is updated immediately
+                  // This ensures the entertainment section shows right away
+                  setTimeout(() => {
+                    fetchQueueData()
+                  }, 100)
                 } else {
                   console.log('⏳ Waiting for submission to appear in Google Sheets... (will keep checking)')
                   // Keep pendingSubmission for next poll - will try again in 3 seconds
