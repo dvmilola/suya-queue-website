@@ -25,14 +25,17 @@ function Admin() {
   const {
     currentServing,
     activeQueue,
+    queueData, // Get full queue data to prevent flickering
     updateCurrentServing,
     resetQueue,
     googleSheetsUrl,
     googleFormUrl,
     statusSheetGid,
+    statusFormUrl,
     saveGoogleSheetsUrl,
     saveGoogleFormUrl,
     saveStatusSheetGid,
+    saveStatusFormUrl,
     fetchQueueData
   } = useQueue()
 
@@ -83,10 +86,14 @@ function Admin() {
     const sheetsUrl = formData.get('sheetsUrl')
     const formUrl = formData.get('formUrl')
     const statusGid = formData.get('statusGid')
+    const statusFormUrlInput = formData.get('statusFormUrl')
+    const statusFormEntryId = formData.get('statusFormEntryId')
     
     if (sheetsUrl) saveGoogleSheetsUrl(sheetsUrl)
     if (formUrl) saveGoogleFormUrl(formUrl)
     if (statusGid) saveStatusSheetGid(statusGid.trim() || null)
+    if (statusFormUrlInput) saveStatusFormUrl(statusFormUrlInput.trim())
+    if (statusFormEntryId) localStorage.setItem('statusFormEntryId', statusFormEntryId.trim())
     
     setShowSetup(false)
     alert('Configuration saved!')

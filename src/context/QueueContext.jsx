@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 
 const QueueContext = createContext()
 
@@ -19,19 +19,25 @@ export function QueueProvider({ children }) {
   const [statusSheetGid, setStatusSheetGid] = useState(() => {
     return localStorage.getItem('statusSheetGid') || '373003429' // Default to user's status sheet GID
   })
+  const [statusFormUrl, setStatusFormUrl] = useState(() => {
+    return localStorage.getItem('statusFormUrl') || 'https://docs.google.com/forms/d/e/1FAIpQLSffuGdmjKo2RDGXzVnH6mbSYTwYmmy-j4r7mnvga8IO9TTAQQ/viewform'
+  })
 
   // Compute active queue (filter out served customers)
   // Only show customers whose queue number is greater than currentServing
-  const activeQueue = queueData.filter(item => {
-    const itemNum = parseInt(item.queueNumber.replace('SU-', ''))
-    const servingNum = parseInt(currentServing.replace('SU-', ''))
-    return itemNum > servingNum
-  }).sort((a, b) => {
-    // Sort by queue number to maintain order
-    const aNum = parseInt(a.queueNumber.replace('SU-', ''))
-    const bNum = parseInt(b.queueNumber.replace('SU-', ''))
-    return aNum - bNum
-  })
+  // Use useMemo to prevent unnecessary recalculations and flickering
+  const activeQueue = useMemo(() => {
+    return queueData.filter(item => {
+      const itemNum = parseInt(item.queueNumber.replace('SU-', ''))
+      const servingNum = parseInt(currentServing.replace('SU-', ''))
+      return itemNum > servingNum
+    }).sort((a, b) => {
+      // Sort by queue number to maintain order
+      const aNum = parseInt(a.queueNumber.replace('SU-', ''))
+      const bNum = parseInt(b.queueNumber.replace('SU-', ''))
+      return aNum - bNum
+    })
+  }, [queueData, currentServing])
 
   // Extract sheet ID and gid from Google Sheets URL
   const extractSheetId = (url) => {
@@ -292,11 +298,50 @@ export function QueueProvider({ children }) {
     setCurrentServing(number)
     localStorage.setItem('currentServing', number)
     
-    // Also try to update Google Sheets if we have a status form URL
-    // Note: This requires a separate Google Form for status updates
-    // For now, we'll just update localStorage and the sheet will be updated manually
-    // or via a separate mechanism
-    console.log(`Updated currentServing to ${number}. To sync across devices, update Google Sheets manually or use status form.`)
+    // Automatically update Status sheet via Google Form if configured
+    if (statusFormUrl) {
+      try {
+        // Extract form ID from status form URL
+        let formId = null
+        const formIdMatchE = statusFormUrl.match(/\/forms\/d\/e\/([a-zA-Z0-9-_]+)/)
+        if (formIdMatchE) {
+          formId = formIdMatchE[1]
+        } else {
+          const formIdMatchD = statusFormUrl.match(/\/forms\/d\/([a-zA-Z0-9-_]+)/)
+          if (formIdMatchD) {
+            formId = formIdMatchD[1]
+          }
+        }
+        
+        if (formId) {
+          const formAction = `https://docs.google.com/forms/d/e/${formId}/formResponse`
+          
+          // Entry ID for the status form field (you'll need to configure this)
+          // For now, we'll use a common entry ID pattern - you may need to update this
+          const statusEntryId = localStorage.getItem('statusFormEntryId') || 'entry.0' // Default, should be configured
+          
+          const formData = new URLSearchParams()
+          formData.append(statusEntryId, number)
+          
+          // Submit to form (no-cors mode)
+          await fetch(formAction, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData,
+          })
+          
+          console.log(`✅ Submitted status update to Google Form: ${number}`)
+        }
+      } catch (error) {
+        console.warn('Failed to submit status update to Google Form:', error)
+        // Continue anyway - localStorage update still works
+      }
+    }
+    
+    console.log(`Updated currentServing to ${number}`)
   }
 
   const saveUserQueueNumber = (number) => {
@@ -323,6 +368,15 @@ export function QueueProvider({ children }) {
     }
   }
 
+  const saveStatusFormUrl = (url) => {
+    setStatusFormUrl(url)
+    if (url) {
+      localStorage.setItem('statusFormUrl', url)
+    } else {
+      localStorage.removeItem('statusFormUrl')
+    }
+  }
+
   const resetQueue = () => {
     setCurrentServing('SU-000')
     setQueueData([])
@@ -346,7 +400,9 @@ export function QueueProvider({ children }) {
         saveGoogleSheetsUrl,
         saveGoogleFormUrl,
         saveStatusSheetGid,
+        saveStatusFormUrl,
         statusSheetGid,
+        statusFormUrl,
         resetQueue,
         fetchQueueData
       }}
