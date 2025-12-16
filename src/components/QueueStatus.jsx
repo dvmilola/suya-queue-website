@@ -227,18 +227,22 @@ function QueueStatus() {
   useEffect(() => {
     if (userQueueNumber) {
       console.log('🔄 QueueStatus: User queue number assigned, triggering re-render')
-      // Trigger immediate re-render
+      // Trigger immediate re-render to force animations
       setRenderKey(prev => prev + 1)
-      // Also trigger after a delay to ensure activeQueue is fully updated
+      // Also trigger after delays to ensure activeQueue and queueData are fully updated
       const timer1 = setTimeout(() => {
         setRenderKey(prev => prev + 1)
-      }, 300)
+      }, 100)
       const timer2 = setTimeout(() => {
         setRenderKey(prev => prev + 1)
-      }, 800)
+      }, 500)
+      const timer3 = setTimeout(() => {
+        setRenderKey(prev => prev + 1)
+      }, 1000)
       return () => {
         clearTimeout(timer1)
         clearTimeout(timer2)
+        clearTimeout(timer3)
       }
     }
   }, [userQueueNumber])
