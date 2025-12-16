@@ -26,6 +26,15 @@ function Registration() {
   const [focusedField, setFocusedField] = useState(null)
   const submissionInProgress = useRef(false) // Prevent duplicate submissions
 
+  // Clear any previous user's data when entering registration page
+  // This allows multiple people to register from the same device/browser
+  useEffect(() => {
+    console.log('🔄 Registration page opened - clearing previous user data to allow new registration')
+    sessionStorage.removeItem('userQueueNumber')
+    sessionStorage.removeItem('pendingSubmission')
+    // Don't clear localStorage.currentServing - that's shared across all users/devices
+  }, [])
+
   // Debug: Log Google Form URL on mount
   useEffect(() => {
     console.log('Registration component mounted. Google Form URL:', googleFormUrl || 'NOT CONFIGURED')

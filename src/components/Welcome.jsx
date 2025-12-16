@@ -6,6 +6,15 @@ import './Welcome.css'
 function Welcome() {
   const navigate = useNavigate()
 
+  // Clear any previous user's data when clicking "Join the Queue"
+  // This allows multiple people to register from the same device
+  const handleJoinQueue = () => {
+    console.log('🔄 Welcome page - clearing previous user data before joining queue')
+    sessionStorage.removeItem('userQueueNumber')
+    sessionStorage.removeItem('pendingSubmission')
+    navigate('/register')
+  }
+
   return (
     <div className="welcome-screen">
       <div className="container">
@@ -34,7 +43,7 @@ function Welcome() {
 
           <button
             className="btn-primary"
-            onClick={() => navigate('/register')}
+            onClick={handleJoinQueue}
           >
             <span className="button-content">
               <FaArrowRight className="icon-inline" />
