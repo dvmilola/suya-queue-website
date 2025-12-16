@@ -218,7 +218,7 @@ function Admin() {
                   <div className="form-group">
                     <label htmlFor="statusGid">
                       <FaCog className="label-icon" />
-                      Status Sheet GID (for cross-device sync):
+                      Status Sheet GID (for reading current serving):
                     </label>
                     <input
                       type="text"
@@ -230,6 +230,40 @@ function Admin() {
                     />
                     <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', display: 'block', marginTop: '5px' }}>
                       GID from your Status sheet tab URL (e.g., #gid=373003429)
+                    </small>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="statusFormUrl">
+                      <FaFileAlt className="label-icon" />
+                      Status Form URL (for auto-updating Status sheet):
+                    </label>
+                    <input
+                      type="url"
+                      id="statusFormUrl"
+                      name="statusFormUrl"
+                      placeholder="https://docs.google.com/forms/d/..."
+                      defaultValue={statusFormUrl || 'https://docs.google.com/forms/d/e/1FAIpQLSffuGdmjKo2RDGXzVnH6mbSYTwYmmy-j4r7mnvga8IO9TTAQQ/viewform'}
+                      className="form-input"
+                    />
+                    <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', display: 'block', marginTop: '5px' }}>
+                      Google Form that writes to Status sheet. Auto-submits when you click "Next Customer".
+                    </small>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="statusFormEntryId">
+                      <FaCog className="label-icon" />
+                      Status Form Entry ID:
+                    </label>
+                    <input
+                      type="text"
+                      id="statusFormEntryId"
+                      name="statusFormEntryId"
+                      placeholder="entry.1883307002"
+                      defaultValue={localStorage.getItem('statusFormEntryId') || 'entry.1883307002'}
+                      className="form-input"
+                    />
+                    <small style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', display: 'block', marginTop: '5px' }}>
+                      Entry ID from Status Form (found in Network tab when submitting)
                     </small>
                   </div>
                   <motion.button
